@@ -27,13 +27,15 @@ function NoteDetail() {
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
 
   useEffect(() => {
-    if (noteQuery.data) {
+    if (noteQuery.data && hydratedFor !== noteQuery.data.id) {
       setTitle(noteQuery.data.title);
       setBody(noteQuery.data.body_md ?? "");
+      setHydratedFor(noteQuery.data.id);
     }
-  }, [noteQuery.data]);
+  }, [noteQuery.data, hydratedFor]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
