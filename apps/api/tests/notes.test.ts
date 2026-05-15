@@ -303,9 +303,14 @@ describe("GET /api/notes/search", () => {
     expect(body.notes).toEqual([]);
   });
 
-  it("returns 400 on missing q", async () => {
-    const res = await app.request("/api/notes/search");
-    expect(res.status).toBe(400);
+  it("returns recent notes when q is empty", async () => {
+    await post("/api/notes", { title: "Old", type: "fleeting" });
+    await new Promise((r) => setTimeout(r, 5));
+    await post("/api/notes", { title: "New", type: "fleeting" });
+    const res = await app.request("/api/notes/search?q=");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { notes: { title: string }[] };
+    expect(body.notes.map((n) => n.title)).toEqual(["New", "Old"]);
   });
 
   it("excludes archived notes", async () => {

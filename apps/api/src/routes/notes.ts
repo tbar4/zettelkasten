@@ -51,11 +51,23 @@ notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) 
   return c.json(serializeNote(created, []), 201);
 });
 
-const SearchQuerySchema = z.object({ q: z.string().min(1) });
+const SearchQuerySchema = z.object({ q: z.string().default("") });
 
 notesRoute.get("/search", zValidator("query", SearchQuerySchema, zodErrorHook), async (c) => {
   const { q } = c.req.valid("query");
-  const tsQuery = sql`websearch_to_tsquery('english', ${q})`;
+  const trimmed = q.trim();
+
+  if (trimmed.length === 0) {
+    const rows = await db
+      .select({ id: notes.id, title: notes.title, type: notes.type })
+      .from(notes)
+      .where(isNull(notes.archivedAt))
+      .orderBy(desc(notes.updatedAt))
+      .limit(10);
+    return c.json({ notes: rows });
+  }
+
+  const tsQuery = sql`websearch_to_tsquery('english', ${trimmed})`;
   const rows = await db
     .select({
       id: notes.id,

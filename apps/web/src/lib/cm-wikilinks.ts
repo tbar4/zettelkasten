@@ -65,7 +65,7 @@ export function wikilinkCompletionSource(searchFn: SearchFn): CompletionSource {
     const q = before.slice(open + 2);
     if (!ctx.explicit && q.length === 0) return null;
 
-    const { notes } = await searchFn(q.length > 0 ? q : " ");
+    const { notes } = await searchFn(q);
     return {
       from: line.from + open + 2,
       to: ctx.pos,
