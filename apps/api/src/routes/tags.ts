@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, ilike, inArray, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { notes, noteTags, tags } from "../db/schema";
 import { notFound } from "../lib/errors";
@@ -26,6 +26,25 @@ tagsRoute.get("/", async (c) => {
     .leftJoin(noteTags, eq(noteTags.tagId, tags.id))
     .groupBy(tags.id, tags.name)
     .orderBy(tags.name);
+  return c.json({ tags: rows });
+});
+
+const SuggestQuerySchema = z.object({ q: z.string().default("") });
+
+tagsRoute.get("/suggest", zValidator("query", SuggestQuerySchema, zodErrorHook), async (c) => {
+  const { q } = c.req.valid("query");
+  const trimmed = q.trim();
+  const rows = await db
+    .select({
+      name: tags.name,
+      count: sql<number>`count(${noteTags.tagId})::int`.as("count")
+    })
+    .from(tags)
+    .leftJoin(noteTags, eq(noteTags.tagId, tags.id))
+    .where(trimmed.length > 0 ? ilike(tags.name, `${trimmed}%`) : undefined)
+    .groupBy(tags.id, tags.name)
+    .orderBy(sql`count DESC`, tags.name)
+    .limit(10);
   return c.json({ tags: rows });
 });
 
