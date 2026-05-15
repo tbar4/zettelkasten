@@ -115,7 +115,9 @@ notesRoute.patch(
         })
         .where(eq(notes.id, id))
         .returning();
-      await syncWikilinks(tx, id, row!.bodyMd);
+      if (update.body_md !== undefined) {
+        await syncWikilinks(tx, id, row!.bodyMd);
+      }
       return row!;
     });
 

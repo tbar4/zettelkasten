@@ -377,6 +377,38 @@ describe("wikilink sync on note write", () => {
     expect(links.outgoing).toEqual([]);
   });
 
+  it("does not re-run wikilink sync when only title changes", async () => {
+    await post("/api/notes", { title: "T", type: "permanent" });
+    const src = (await (
+      await post("/api/notes", {
+        title: "S",
+        type: "permanent",
+        body_md: "[[T]]"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    const before = (await (
+      await app.request(`/api/notes/${src.id}/links`)
+    ).json()) as { outgoing: { id: string }[] };
+    const linkIdBefore = before.outgoing[0]!.id;
+
+    // PATCH only the title.
+    await app.request(`/api/notes/${src.id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "if-match": src.updated_at
+      },
+      body: JSON.stringify({ title: "S renamed" })
+    });
+
+    const after = (await (
+      await app.request(`/api/notes/${src.id}/links`)
+    ).json()) as { outgoing: { id: string }[] };
+    // Same link id ⇒ no delete+reinsert happened.
+    expect(after.outgoing[0]!.id).toBe(linkIdBefore);
+  });
+
   it("manual links survive a wikilink-less PATCH", async () => {
     const target = (await (
       await post("/api/notes", { title: "T", type: "permanent" })
