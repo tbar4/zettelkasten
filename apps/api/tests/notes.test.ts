@@ -94,3 +94,118 @@ describe("GET /api/notes", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("GET /api/notes/:id", () => {
+  it("returns the note", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Read me", type: "permanent" })
+    ).json()) as { id: string };
+
+    const res = await app.request(`/api/notes/${created.id}`);
+    expect(res.status).toBe(200);
+    const note = (await res.json()) as { title: string };
+    expect(note.title).toBe("Read me");
+  });
+
+  it("returns 404 for unknown id", async () => {
+    const res = await app.request(
+      "/api/notes/550e8400-e29b-41d4-a716-446655440099"
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 400 for non-uuid id", async () => {
+    const res = await app.request("/api/notes/not-a-uuid");
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("PATCH /api/notes/:id", () => {
+  async function patch(
+    path: string,
+    body: unknown,
+    headers: Record<string, string> = {}
+  ): Promise<Response> {
+    return app.request(path, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", ...headers },
+      body: JSON.stringify(body)
+    });
+  }
+
+  it("updates title and body", async () => {
+    const created = (await (
+      await post("/api/notes", {
+        title: "Original",
+        type: "permanent",
+        body_md: "before"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    const res = await patch(
+      `/api/notes/${created.id}`,
+      { title: "Updated", body_md: "after" },
+      { "if-match": created.updated_at }
+    );
+    expect(res.status).toBe(200);
+    const note = (await res.json()) as { title: string; body_md: string };
+    expect(note.title).toBe("Updated");
+    expect(note.body_md).toBe("after");
+  });
+
+  it("returns 409 when If-Match doesn't match", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Orig", type: "permanent" })
+    ).json()) as { id: string };
+
+    const res = await patch(
+      `/api/notes/${created.id}`,
+      { title: "Updated" },
+      { "if-match": "2000-01-01T00:00:00.000Z" }
+    );
+    expect(res.status).toBe(409);
+  });
+
+  it("requires If-Match header (400 if missing)", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Orig", type: "permanent" })
+    ).json()) as { id: string };
+
+    const res = await patch(`/api/notes/${created.id}`, { title: "X" });
+    expect(res.status).toBe(400);
+  });
+
+  it("forbids body_md on topic notes", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Topic", type: "topic" })
+    ).json()) as { id: string; updated_at: string };
+
+    const res = await patch(
+      `/api/notes/${created.id}`,
+      { body_md: "should fail" },
+      { "if-match": created.updated_at }
+    );
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("DELETE /api/notes/:id", () => {
+  it("archives the note", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Bye", type: "fleeting" })
+    ).json()) as { id: string };
+
+    const res = await app.request(`/api/notes/${created.id}`, {
+      method: "DELETE"
+    });
+    expect(res.status).toBe(204);
+
+    const list = await (await app.request("/api/notes")).json();
+    expect((list as { notes: unknown[] }).notes).toHaveLength(0);
+
+    const withArchived = await (
+      await app.request("/api/notes?include_archived=true")
+    ).json();
+    expect((withArchived as { notes: unknown[] }).notes).toHaveLength(1);
+  });
+});
