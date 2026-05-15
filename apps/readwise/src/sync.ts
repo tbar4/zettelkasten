@@ -94,6 +94,10 @@ async function insertHighlights(
         color: h.color ?? null,
         readwiseHighlightId
       })
+      // Untargeted: the partial unique index on readwise_highlight_id
+      // (WHERE NOT NULL) can't be addressed via Drizzle's target shorthand
+      // in 0.36. The PK is gen_random_uuid() so the only conflict surface
+      // is that partial unique — re-syncs of the same highlight no-op.
       .onConflictDoNothing()
       .returning({ id: highlights.id });
     if (result.length > 0) inserted++;
