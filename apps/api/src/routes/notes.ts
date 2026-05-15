@@ -7,6 +7,7 @@ import { db } from "../db/client";
 import { notes, noteTags, tags } from "../db/schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
 import { zodErrorHook } from "../lib/zod-error-hook";
+import { syncWikilinks } from "../lib/wikilinks-sync";
 
 export const notesRoute = new Hono();
 
@@ -43,6 +44,7 @@ notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) 
       bodyMd: input.body_md ?? null
     })
     .returning();
+  await syncWikilinks(db, created!.id, created!.bodyMd);
   return c.json(serializeNote(created!, []), 201);
 });
 
@@ -109,6 +111,9 @@ notesRoute.patch(
       })
       .where(eq(notes.id, id))
       .returning();
+
+    // Re-sync wikilinks from the updated body.
+    await syncWikilinks(db, id, updated!.bodyMd);
 
     const tagsByNote = await fetchTagsFor([id]);
     return c.json(serializeNote(updated!, tagsByNote.get(id) ?? []));

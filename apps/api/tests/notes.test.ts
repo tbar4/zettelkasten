@@ -328,3 +328,87 @@ describe("GET /api/notes/search", () => {
     expect(body.notes).toHaveLength(10);
   });
 });
+
+describe("wikilink sync on note write", () => {
+  it("POST with a wikilink creates the corresponding note_link", async () => {
+    const target = (await (
+      await post("/api/notes", { title: "Target", type: "permanent" })
+    ).json()) as { id: string };
+
+    const created = (await (
+      await post("/api/notes", {
+        title: "Source",
+        type: "permanent",
+        body_md: "see [[Target]]"
+      })
+    ).json()) as { id: string };
+
+    const links = await (
+      await app.request(`/api/notes/${created.id}/links`)
+    ).json();
+    expect((links as { outgoing: { to_note_id: string }[] }).outgoing).toHaveLength(1);
+    expect((links as { outgoing: { to_note_id: string }[] }).outgoing[0]!.to_note_id).toBe(
+      target.id
+    );
+  });
+
+  it("PATCH that removes a wikilink removes the note_link", async () => {
+    await post("/api/notes", { title: "T", type: "permanent" });
+    const src = (await (
+      await post("/api/notes", {
+        title: "S",
+        type: "permanent",
+        body_md: "[[T]]"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    await app.request(`/api/notes/${src.id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "if-match": src.updated_at
+      },
+      body: JSON.stringify({ body_md: "no link now" })
+    });
+
+    const links = (await (
+      await app.request(`/api/notes/${src.id}/links`)
+    ).json()) as { outgoing: unknown[] };
+    expect(links.outgoing).toEqual([]);
+  });
+
+  it("manual links survive a wikilink-less PATCH", async () => {
+    const target = (await (
+      await post("/api/notes", { title: "T", type: "permanent" })
+    ).json()) as { id: string };
+    const src = (await (
+      await post("/api/notes", {
+        title: "S",
+        type: "permanent",
+        body_md: "first"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    await post("/api/links", {
+      from_note_id: src.id,
+      to_note_id: target.id,
+      link_type: "supports"
+    });
+
+    await app.request(`/api/notes/${src.id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "if-match": src.updated_at
+      },
+      body: JSON.stringify({ body_md: "updated body" })
+    });
+
+    const links = (await (
+      await app.request(`/api/notes/${src.id}/links`)
+    ).json()) as { outgoing: { link_type: string; source: string }[] };
+    expect(links.outgoing).toHaveLength(1);
+    expect(links.outgoing[0]!.link_type).toBe("supports");
+    expect(links.outgoing[0]!.source).toBe("manual");
+  });
+});
