@@ -731,13 +731,13 @@ git commit -m "feat(shared): zod schemas for note, link, tag"
 
 - [ ] **Step 2: Create `apps/api/tsconfig.json`**
 
-`lib` is overridden to drop DOM types — this is Node-only code; importing browser globals like `window` or `document` should be a type error.
+`lib` is overridden to drop DOM types — this is Node-only code; importing browser globals like `window` or `document` should be a type error. `rootDir: "."` plus including `tests/**/*` lets both source and test files be part of the project (test files can't be outside `rootDir`).
 
 ```json
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
     "module": "ESNext",
     "moduleResolution": "Bundler",
