@@ -23,7 +23,6 @@
     "@uiw/react-codemirror": "^4.23.7",
     "@zk/shared": "workspace:*",
     "graphology": "^0.25.4",
-    "graphology-layout-force": "^0.2.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sigma": "^3.0.0-beta.18",

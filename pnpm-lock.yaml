@@ -87,9 +87,6 @@ importers:
       graphology:
         specifier: ^0.25.4
         version: 0.25.4(graphology-types@0.24.8)
-      graphology-layout-force:
-        specifier: ^0.2.4
-        version: 0.2.4(graphology-types@0.24.8)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -1632,11 +1629,6 @@ packages:
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
-
-  graphology-layout-force@0.2.4:
-    resolution: {integrity: sha512-NYZz0YAnDkn5pkm30cvB0IScFoWGtbzJMrqaiH070dYlYJiag12Oc89dbVfaMaVR/w8DMIKxn/ix9Bqj+Umm9Q==}
-    peerDependencies:
-      graphology-types: '>=0.19.0'
 
   graphology-types@0.24.8:
     resolution: {integrity: sha512-hDRKYXa8TsoZHjgEaysSRyPdT6uB78Ci8WnjgbStlQysz7xR52PInxNsmnB7IBOM1BhikxkNyCVEFgmPKnpx3Q==}
@@ -3392,11 +3384,6 @@ snapshots:
       is-glob: 4.0.3
 
   gopd@1.2.0: {}
-
-  graphology-layout-force@0.2.4(graphology-types@0.24.8):
-    dependencies:
-      graphology-types: 0.24.8
-      graphology-utils: 2.5.2(graphology-types@0.24.8)
 
   graphology-types@0.24.8: {}
 

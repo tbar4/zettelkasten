@@ -34,6 +34,8 @@ const SuggestQuerySchema = z.object({ q: z.string().default("") });
 tagsRoute.get("/suggest", zValidator("query", SuggestQuerySchema, zodErrorHook), async (c) => {
   const { q } = c.req.valid("query");
   const trimmed = q.trim();
+  // Escape LIKE-pattern metacharacters so % / _ / \ in user input are literal.
+  const escaped = trimmed.replace(/[\\%_]/g, (m) => `\\${m}`);
   const rows = await db
     .select({
       name: tags.name,
@@ -41,7 +43,7 @@ tagsRoute.get("/suggest", zValidator("query", SuggestQuerySchema, zodErrorHook),
     })
     .from(tags)
     .leftJoin(noteTags, eq(noteTags.tagId, tags.id))
-    .where(trimmed.length > 0 ? ilike(tags.name, `${trimmed}%`) : undefined)
+    .where(trimmed.length > 0 ? ilike(tags.name, `${escaped}%`) : undefined)
     .groupBy(tags.id, tags.name)
     .orderBy(sql`count DESC`, tags.name)
     .limit(10);
