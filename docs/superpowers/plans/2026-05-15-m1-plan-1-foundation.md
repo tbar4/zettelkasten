@@ -150,10 +150,14 @@ Expected: a version number (>= 9.0.0). If missing: `npm install -g pnpm@latest`.
 
 - [ ] **Step 4: Create `pnpm-workspace.yaml`**
 
+`allowBuilds` pre-approves esbuild's postinstall script. pnpm 11+ blocks build scripts by default; declaring this up front avoids interactive prompts and "ignored builds" errors when vitest is installed.
+
 ```yaml
 packages:
   - "apps/*"
   - "packages/*"
+allowBuilds:
+  esbuild: true
 ```
 
 - [ ] **Step 5: Create `tsconfig.base.json`**
@@ -196,6 +200,7 @@ dist/
 *.log
 .DS_Store
 coverage/
+*.tsbuildinfo
 ```
 
 - [ ] **Step 7: Replace `README.md`**
@@ -379,18 +384,18 @@ git commit -m "chore: docker compose with postgres+pgvector and redis"
 
 - [ ] **Step 2: Create `packages/shared/tsconfig.json`**
 
-`lib` is overridden to drop DOM/DOM.Iterable from the base — this package is consumed by Node (API) and the browser (web), but the schemas themselves are environment-agnostic and shouldn't pull DOM types in.
+`lib` is overridden to drop DOM/DOM.Iterable from the base — this package is consumed by Node (API) and the browser (web), but the schemas themselves are environment-agnostic and shouldn't pull DOM types in. `rootDir: "."` plus including `tests/**/*` makes the test files part of the project so the language server resolves their imports correctly.
 
 ```json
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
     "lib": ["ES2022"],
     "composite": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "tests/**/*"]
 }
 ```
 
