@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { and, desc, eq, ilike, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { NewNoteSchema, NoteType, UpdateNoteSchema } from "@zk/shared";
 import { db } from "../db/client";
 import { notes, noteTags, tags } from "../db/schema";
@@ -55,17 +55,21 @@ const SearchQuerySchema = z.object({ q: z.string().min(1) });
 
 notesRoute.get("/search", zValidator("query", SearchQuerySchema, zodErrorHook), async (c) => {
   const { q } = c.req.valid("query");
+  const tsQuery = sql`websearch_to_tsquery('english', ${q})`;
   const rows = await db
     .select({
       id: notes.id,
       title: notes.title,
-      type: notes.type
+      type: notes.type,
+      rank: sql<number>`ts_rank(${notes.tsv}, ${tsQuery})`.as("rank")
     })
     .from(notes)
-    .where(and(ilike(notes.title, `%${q}%`), isNull(notes.archivedAt)))
-    .orderBy(desc(notes.updatedAt))
+    .where(
+      and(sql`${notes.tsv} @@ ${tsQuery}`, isNull(notes.archivedAt))
+    )
+    .orderBy(sql`rank DESC`, desc(notes.updatedAt))
     .limit(10);
-  return c.json({ notes: rows });
+  return c.json({ notes: rows.map(({ rank, ...rest }) => rest) });
 });
 
 const idParam = z.object({ id: z.string().uuid() });

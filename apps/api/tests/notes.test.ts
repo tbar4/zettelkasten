@@ -327,6 +327,44 @@ describe("GET /api/notes/search", () => {
     const body = (await res.json()) as { notes: unknown[] };
     expect(body.notes).toHaveLength(10);
   });
+
+  it("ranks title matches above body matches", async () => {
+    await post("/api/notes", {
+      title: "Foucault",
+      type: "literature",
+      body_md: "x"
+    });
+    await post("/api/notes", {
+      title: "Other",
+      type: "permanent",
+      body_md: "Foucault appears in body only"
+    });
+    const res = await app.request("/api/notes/search?q=Foucault");
+    const body = (await res.json()) as {
+      notes: { title: string }[];
+    };
+    expect(body.notes[0]!.title).toBe("Foucault");
+    expect(body.notes[1]!.title).toBe("Other");
+  });
+
+  it("handles percent and underscore as literals (no LIKE-pattern injection)", async () => {
+    await post("/api/notes", { title: "100%", type: "fleeting" });
+    await post("/api/notes", { title: "snake_case", type: "fleeting" });
+    await post("/api/notes", { title: "unrelated", type: "fleeting" });
+
+    const pct = await app.request("/api/notes/search?q=100%25");
+    // %25 is "%" url-encoded; the search should treat the % as text, not a wildcard.
+    const pctBody = (await pct.json()) as { notes: { title: string }[] };
+    expect(pctBody.notes.map((n) => n.title)).toContain("100%");
+    expect(pctBody.notes.find((n) => n.title === "unrelated")).toBeUndefined();
+  });
+
+  it("is case-insensitive", async () => {
+    await post("/api/notes", { title: "MixedCase", type: "fleeting" });
+    const res = await app.request("/api/notes/search?q=mixedcase");
+    const body = (await res.json()) as { notes: { title: string }[] };
+    expect(body.notes.map((n) => n.title)).toContain("MixedCase");
+  });
 });
 
 describe("wikilink sync on note write", () => {
