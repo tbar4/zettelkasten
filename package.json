@@ -1,0 +1,22 @@
+{
+  "name": "zettelkasten",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @zk/api dev",
+    "dev:web": "pnpm --filter @zk/web dev",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d postgres redis"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.9.0"
+  }
+}
