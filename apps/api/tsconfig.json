@@ -9,5 +9,8 @@
     "noEmit": false
   },
   "include": ["src/**/*", "tests/**/*", "vitest.config.ts", "drizzle.config.ts"],
-  "references": [{ "path": "../../packages/shared" }]
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/db-schema" }
+  ]
 }

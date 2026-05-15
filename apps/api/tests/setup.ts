@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, afterAll } from "vitest";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { sql as rawSql } from "drizzle-orm";
-import * as schema from "../src/db/schema";
+import * as schema from "@zk/db-schema";
 
 process.env.NODE_ENV = "test";
 

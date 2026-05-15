@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { and, asc, desc, eq, isNull, lte, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { notes, spacedReview } from "../db/schema";
+import { notes, spacedReview } from "@zk/db-schema";
 
 export const inboxRoute = new Hono();
 

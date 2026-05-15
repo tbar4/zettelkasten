@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@zk/db-schema": "workspace:*",
     "@zk/shared": "workspace:*",
     "drizzle-orm": "^0.36.4",
     "postgres": "^3.4.5",

@@ -5,7 +5,7 @@ import { join } from "path";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { sql as rawSql, eq } from "drizzle-orm";
-import * as schema from "../../api/src/db/schema";
+import * as schema from "@zk/db-schema";
 import { runSweep } from "../src/sweep";
 
 const url =

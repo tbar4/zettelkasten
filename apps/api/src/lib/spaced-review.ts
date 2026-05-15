@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { notes, spacedReview } from "../db/schema";
+import { notes, spacedReview } from "@zk/db-schema";
 
 const LADDER = [1, 3, 7, 14, 30, 90];
 

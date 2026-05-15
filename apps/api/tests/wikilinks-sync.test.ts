@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
-import * as schema from "../src/db/schema";
+import * as schema from "@zk/db-schema";
 import { syncWikilinks } from "../src/lib/wikilinks-sync";
 
 const url =

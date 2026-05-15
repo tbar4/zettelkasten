@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, ilike, inArray, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { notes, noteTags, tags } from "../db/schema";
+import { notes, noteTags, tags } from "@zk/db-schema";
 import { notFound } from "../lib/errors";
 import { zodErrorHook } from "../lib/zod-error-hook";
 

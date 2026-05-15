@@ -7,11 +7,9 @@
     "lib": ["ES2022"],
     "noEmit": true
   },
-  "include": [
-    "src/**/*",
-    "tests/**/*",
-    "vitest.config.ts",
-    "../api/src/db/schema.ts"
-  ],
-  "references": [{ "path": "../../packages/shared" }]
+  "include": ["src/**/*", "tests/**/*", "vitest.config.ts"],
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/db-schema" }
+  ]
 }

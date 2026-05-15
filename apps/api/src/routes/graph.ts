@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { isNull } from "drizzle-orm";
 import { db } from "../db/client";
-import { notes, noteLinks } from "../db/schema";
+import { notes, noteLinks } from "@zk/db-schema";
 
 export const graphRoute = new Hono();
 

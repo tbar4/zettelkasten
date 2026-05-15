@@ -3,7 +3,7 @@ import { join } from "path";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, inArray, isNull } from "drizzle-orm";
-import { notes, noteLinks, noteTags, tags } from "./schema-mirror";
+import { notes, noteLinks, noteTags, tags } from "@zk/db-schema";
 import { fileNameFor } from "./slug";
 import { serialize } from "./frontmatter";
 import { openOrInitRepo, commitAll } from "./git";

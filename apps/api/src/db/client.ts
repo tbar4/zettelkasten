@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "./schema";
+import * as schema from "@zk/db-schema";
 import { dbUrl } from "../env";
 
 const sql = postgres(dbUrl(), { max: 10 });
