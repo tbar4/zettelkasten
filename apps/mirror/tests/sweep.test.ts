@@ -19,7 +19,7 @@ let mirrorDir = "";
 
 beforeEach(async () => {
   await db.execute(
-    rawSql`TRUNCATE TABLE spaced_review, note_tag, note_link, tag, note RESTART IDENTITY CASCADE`
+    rawSql`TRUNCATE TABLE note_source, highlight, source, spaced_review, note_tag, note_link, tag, note RESTART IDENTITY CASCADE`
   );
   if (mirrorDir) await rm(mirrorDir, { recursive: true, force: true });
   mirrorDir = await mkdtemp(join(tmpdir(), "zk-mirror-"));
