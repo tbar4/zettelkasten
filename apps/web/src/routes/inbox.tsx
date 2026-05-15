@@ -1,14 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../lib/api-client";
+import { InboxReviewPane } from "../components/InboxReviewPane";
 
 export const Route = createFileRoute("/inbox")({
   component: InboxPage
 });
 
 function InboxPage() {
+  const inboxQuery = useQuery({
+    queryKey: ["inbox"],
+    queryFn: () => api.getInbox()
+  });
+
+  if (inboxQuery.isLoading) return <p>Loading inbox…</p>;
+  if (inboxQuery.isError || !inboxQuery.data)
+    return (
+      <p style={{ color: "#f7768e" }}>
+        Failed to load inbox: {String(inboxQuery.error)}
+      </p>
+    );
+
   return (
     <div>
       <h2>Inbox</h2>
-      <p style={{ color: "#888" }}>Panes will appear here (Tasks 12-14).</p>
+      <InboxReviewPane items={inboxQuery.data.due} />
     </div>
   );
 }
