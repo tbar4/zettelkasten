@@ -116,6 +116,19 @@ describe("GET /api/notes", () => {
     expect(body.notes).toEqual([]);
   });
 
+  it("respects ?fields= for slim responses", async () => {
+    const a = (await (
+      await post("/api/notes", { title: "Slim", type: "permanent" })
+    ).json()) as { id: string };
+
+    const res = await app.request(
+      `/api/notes?ids=${a.id}&fields=id,title,type`
+    );
+    const body = (await res.json()) as { notes: Record<string, unknown>[] };
+    expect(body.notes).toHaveLength(1);
+    expect(Object.keys(body.notes[0]!).sort()).toEqual(["id", "title", "type"]);
+  });
+
   it("includes tags on each note in list", async () => {
     const created = (await (
       await post("/api/notes", { title: "A", type: "permanent" })

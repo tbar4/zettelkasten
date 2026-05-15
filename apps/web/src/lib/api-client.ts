@@ -35,6 +35,16 @@ export const api = {
     );
   },
 
+  listNoteSummariesByIds(
+    ids: string[]
+  ): Promise<{ notes: Pick<Note, "id" | "title" | "type">[] }> {
+    if (ids.length === 0) return Promise.resolve({ notes: [] });
+    return request(
+      `/api/notes?ids=${ids.map(encodeURIComponent).join(",")}&fields=id,title,type`,
+      { method: "GET" }
+    );
+  },
+
   getNote(id: string): Promise<Note> {
     return request(`/api/notes/${id}`, { method: "GET" });
   },

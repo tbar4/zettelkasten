@@ -34,7 +34,7 @@ export function LinksPanel({ noteId }: LinksPanelProps) {
 
   const titlesQuery = useQuery({
     queryKey: ["notes", "titles", allReferencedIds],
-    queryFn: () => api.listNotesByIds(allReferencedIds),
+    queryFn: () => api.listNoteSummariesByIds(allReferencedIds),
     enabled: allReferencedIds.length > 0
   });
 

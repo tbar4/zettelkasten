@@ -14,6 +14,7 @@ export const notesRoute = new Hono();
 const ListQuerySchema = z.object({
   type: NoteType.optional(),
   ids: z.string().optional(),
+  fields: z.string().optional(),
   include_archived: z
     .enum(["true", "false"])
     .default("false")
@@ -21,13 +22,22 @@ const ListQuerySchema = z.object({
 });
 
 notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c) => {
-  const { type, ids, include_archived } = c.req.valid("query");
+  const { type, ids, fields, include_archived } = c.req.valid("query");
   if (ids !== undefined) {
     const idList = ids
       .split(",")
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
     if (idList.length === 0) return c.json({ notes: [] });
+
+    if (fields === "id,title,type") {
+      const rows = await db
+        .select({ id: notes.id, title: notes.title, type: notes.type })
+        .from(notes)
+        .where(inArray(notes.id, idList));
+      return c.json({ notes: rows });
+    }
+
     const rows = await db
       .select()
       .from(notes)
