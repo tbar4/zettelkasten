@@ -45,16 +45,16 @@ export const notes = pgTable(
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     notionPageId: text("notion_page_id")
   },
-  (t) => ({
-    notionIdIdx: uniqueIndex("note_notion_page_id_idx")
+  (t) => [
+    uniqueIndex("note_notion_page_id_idx")
       .on(t.notionPageId)
       .where(sql`${t.notionPageId} IS NOT NULL`),
-    typeIdx: index("note_type_idx").on(t.type),
-    topicBodyCheck: check(
+    index("note_type_idx").on(t.type),
+    check(
       "note_topic_body_null",
       sql`(${t.type} <> 'topic') OR (${t.bodyMd} IS NULL)`
     )
-  })
+  ]
 );
 
 export const noteLinks = pgTable(
@@ -73,16 +73,12 @@ export const noteLinks = pgTable(
       .defaultNow()
       .notNull()
   },
-  (t) => ({
-    uniqEdge: uniqueIndex("note_link_unique").on(
-      t.fromNoteId,
-      t.toNoteId,
-      t.linkType
-    ),
-    fromIdx: index("note_link_from_idx").on(t.fromNoteId),
-    toIdx: index("note_link_to_idx").on(t.toNoteId),
-    notSelf: check("note_link_not_self", sql`${t.fromNoteId} <> ${t.toNoteId}`)
-  })
+  (t) => [
+    uniqueIndex("note_link_unique").on(t.fromNoteId, t.toNoteId, t.linkType),
+    index("note_link_from_idx").on(t.fromNoteId),
+    index("note_link_to_idx").on(t.toNoteId),
+    check("note_link_not_self", sql`${t.fromNoteId} <> ${t.toNoteId}`)
+  ]
 );
 
 export const tags = pgTable("tag", {
@@ -103,10 +99,10 @@ export const noteTags = pgTable(
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" })
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.noteId, t.tagId] }),
-    tagIdx: index("note_tag_tag_idx").on(t.tagId)
-  })
+  (t) => [
+    primaryKey({ columns: [t.noteId, t.tagId] }),
+    index("note_tag_tag_idx").on(t.tagId)
+  ]
 );
 
 export const notesRelations = relations(notes, ({ many }) => ({

@@ -8,7 +8,7 @@ process.env.NODE_ENV = "test";
 
 const url =
   process.env.DATABASE_URL_TEST ??
-  "postgres://zk:zk@localhost:5432/zettel_test";
+  "postgres://zk:zk@localhost:5433/zettel_test";
 
 let client: ReturnType<typeof postgres>;
 let db: ReturnType<typeof drizzle<typeof schema>>;

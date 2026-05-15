@@ -5,7 +5,7 @@ export default defineConfig({
   out: "./src/db/migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://zk:zk@localhost:5432/zettel"
+    url: process.env.DATABASE_URL ?? "postgres://zk:zk@localhost:5433/zettel"
   },
   strict: true,
   verbose: true

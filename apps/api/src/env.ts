@@ -7,11 +7,11 @@ const EnvSchema = z.object({
   DATABASE_URL: z
     .string()
     .url()
-    .default("postgres://zk:zk@localhost:5432/zettel"),
+    .default("postgres://zk:zk@localhost:5433/zettel"),
   DATABASE_URL_TEST: z
     .string()
     .url()
-    .default("postgres://zk:zk@localhost:5432/zettel_test"),
+    .default("postgres://zk:zk@localhost:5433/zettel_test"),
   PORT: z.coerce.number().int().positive().default(3001)
 });
 

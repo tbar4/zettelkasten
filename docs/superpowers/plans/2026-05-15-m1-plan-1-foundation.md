@@ -93,7 +93,7 @@
 ## Conventions used in this plan
 
 - **Commands assume `pwd` is the repo root** unless otherwise noted.
-- **Database** runs at `localhost:5432` per `docker-compose.yml`. Two databases on the same instance: `zettel` (dev) and `zettel_test` (tests). Both created by an init script in Compose.
+- **Database** runs at `localhost:5433` per `docker-compose.yml`. Two databases on the same instance: `zettel` (dev) and `zettel_test` (tests). Both created by an init script in Compose.
 - **Tests use Vitest** in all packages. The API's tests run against `zettel_test` with each test wrapped in a transaction that rolls back (so tests are isolated and fast).
 - **Every task ends with a commit.** Commit messages use Conventional Commits (`feat:`, `chore:`, `test:`, etc.).
 - **Wire format:** all timestamps are ISO 8601 strings on the wire; UUIDs are strings.
@@ -256,6 +256,8 @@ git commit -m "chore: initialize pnpm workspace monorepo"
 - Create: `docker-compose.yml`
 - Create: `docker/postgres/init.sql`
 
+**Note on port choice:** the host port maps to `5433`, not `5432`. This avoids conflicts with `Postgres.app` (a common macOS install that binds `localhost:5432`). The container internally still listens on `5432`. All app-side connection strings use `localhost:5433`.
+
 - [ ] **Step 1: Create `docker/postgres/init.sql`** (creates the test DB and enables pgvector on both)
 
 ```sql
@@ -283,7 +285,7 @@ services:
       POSTGRES_PASSWORD: zk
       POSTGRES_DB: zettel
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - zk-postgres-data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -769,8 +771,8 @@ export default defineConfig({
 - [ ] **Step 4: Create `apps/api/.env.example`**
 
 ```
-DATABASE_URL=postgres://zk:zk@localhost:5432/zettel
-DATABASE_URL_TEST=postgres://zk:zk@localhost:5432/zettel_test
+DATABASE_URL=postgres://zk:zk@localhost:5433/zettel
+DATABASE_URL_TEST=postgres://zk:zk@localhost:5433/zettel_test
 PORT=3001
 NODE_ENV=development
 ```
@@ -794,11 +796,11 @@ const EnvSchema = z.object({
   DATABASE_URL: z
     .string()
     .url()
-    .default("postgres://zk:zk@localhost:5432/zettel"),
+    .default("postgres://zk:zk@localhost:5433/zettel"),
   DATABASE_URL_TEST: z
     .string()
     .url()
-    .default("postgres://zk:zk@localhost:5432/zettel_test"),
+    .default("postgres://zk:zk@localhost:5433/zettel_test"),
   PORT: z.coerce.number().int().positive().default(3001)
 });
 
@@ -924,7 +926,7 @@ export default defineConfig({
   out: "./src/db/migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://zk:zk@localhost:5432/zettel"
+    url: process.env.DATABASE_URL ?? "postgres://zk:zk@localhost:5433/zettel"
   },
   strict: true,
   verbose: true
@@ -981,16 +983,16 @@ export const notes = pgTable(
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     notionPageId: text("notion_page_id")
   },
-  (t) => ({
-    notionIdIdx: uniqueIndex("note_notion_page_id_idx")
+  (t) => [
+    uniqueIndex("note_notion_page_id_idx")
       .on(t.notionPageId)
       .where(sql`${t.notionPageId} IS NOT NULL`),
-    typeIdx: index("note_type_idx").on(t.type),
-    topicBodyCheck: check(
+    index("note_type_idx").on(t.type),
+    check(
       "note_topic_body_null",
       sql`(${t.type} <> 'topic') OR (${t.bodyMd} IS NULL)`
     )
-  })
+  ]
 );
 
 export const noteLinks = pgTable(
@@ -1009,16 +1011,12 @@ export const noteLinks = pgTable(
       .defaultNow()
       .notNull()
   },
-  (t) => ({
-    uniqEdge: uniqueIndex("note_link_unique").on(
-      t.fromNoteId,
-      t.toNoteId,
-      t.linkType
-    ),
-    fromIdx: index("note_link_from_idx").on(t.fromNoteId),
-    toIdx: index("note_link_to_idx").on(t.toNoteId),
-    notSelf: check("note_link_not_self", sql`${t.fromNoteId} <> ${t.toNoteId}`)
-  })
+  (t) => [
+    uniqueIndex("note_link_unique").on(t.fromNoteId, t.toNoteId, t.linkType),
+    index("note_link_from_idx").on(t.fromNoteId),
+    index("note_link_to_idx").on(t.toNoteId),
+    check("note_link_not_self", sql`${t.fromNoteId} <> ${t.toNoteId}`)
+  ]
 );
 
 export const tags = pgTable("tag", {
@@ -1039,10 +1037,10 @@ export const noteTags = pgTable(
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" })
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.noteId, t.tagId] }),
-    tagIdx: index("note_tag_tag_idx").on(t.tagId)
-  })
+  (t) => [
+    primaryKey({ columns: [t.noteId, t.tagId] }),
+    index("note_tag_tag_idx").on(t.tagId)
+  ]
 );
 
 export const notesRelations = relations(notes, ({ many }) => ({
@@ -1142,7 +1140,7 @@ process.env.NODE_ENV = "test";
 
 const url =
   process.env.DATABASE_URL_TEST ??
-  "postgres://zk:zk@localhost:5432/zettel_test";
+  "postgres://zk:zk@localhost:5433/zettel_test";
 
 let client: ReturnType<typeof postgres>;
 let db: ReturnType<typeof drizzle<typeof schema>>;
@@ -1175,7 +1173,7 @@ import * as schema from "../src/db/schema";
 
 const url =
   process.env.DATABASE_URL_TEST ??
-  "postgres://zk:zk@localhost:5432/zettel_test";
+  "postgres://zk:zk@localhost:5433/zettel_test";
 
 const client = postgres(url, { max: 1 });
 const db = drizzle(client, { schema });
@@ -2938,7 +2936,7 @@ Prerequisites: Node 22, pnpm 9+, Docker Desktop.
 pnpm install
 pnpm db:up                              # postgres + redis
 pnpm --filter @zk/api db:migrate
-NODE_ENV=test DATABASE_URL_TEST=postgres://zk:zk@localhost:5432/zettel_test \
+NODE_ENV=test DATABASE_URL_TEST=postgres://zk:zk@localhost:5433/zettel_test \
   pnpm --filter @zk/api db:migrate      # also migrate test DB
 pnpm dev:api                            # http://localhost:3001
 pnpm dev:web                            # http://localhost:5173
