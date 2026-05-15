@@ -717,12 +717,10 @@ git commit -m "feat(shared): zod schemas for note, link, tag"
     "@zk/shared": "workspace:*",
     "drizzle-orm": "^0.36.4",
     "hono": "^4.6.9",
-    "pg": "^8.13.1",
     "postgres": "^3.4.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.10",
     "drizzle-kit": "^0.28.1",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
