@@ -93,6 +93,21 @@ describe("GET /api/notes", () => {
     const res = await app.request("/api/notes");
     expect(res.status).toBe(200);
   });
+
+  it("includes tags on each note in list", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "A", type: "permanent" })
+    ).json()) as { id: string };
+    await app.request(`/api/notes/${created.id}/tags`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tags: ["x"] })
+    });
+
+    const res = await app.request("/api/notes");
+    const body = (await res.json()) as { notes: { tags: string[] }[] };
+    expect(body.notes[0]!.tags).toEqual(["x"]);
+  });
 });
 
 describe("GET /api/notes/:id", () => {
@@ -117,6 +132,22 @@ describe("GET /api/notes/:id", () => {
   it("returns 400 for non-uuid id", async () => {
     const res = await app.request("/api/notes/not-a-uuid");
     expect(res.status).toBe(400);
+  });
+
+  it("includes tags in the response", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Tagged", type: "permanent" })
+    ).json()) as { id: string };
+
+    await app.request(`/api/notes/${created.id}/tags`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tags: ["alpha", "beta"] })
+    });
+
+    const res = await app.request(`/api/notes/${created.id}`);
+    const note = (await res.json()) as { tags: string[] };
+    expect(note.tags.sort()).toEqual(["alpha", "beta"]);
   });
 });
 

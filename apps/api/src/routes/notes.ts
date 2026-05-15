@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { and, desc, eq, ilike, isNull } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull } from "drizzle-orm";
 import { NewNoteSchema, NoteType, UpdateNoteSchema } from "@zk/shared";
 import { db } from "../db/client";
-import { notes } from "../db/schema";
+import { notes, noteTags, tags } from "../db/schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
 import { zodErrorHook } from "../lib/zod-error-hook";
 
@@ -29,7 +29,8 @@ notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c
     .from(notes)
     .where(where)
     .orderBy(desc(notes.createdAt));
-  return c.json({ notes: rows.map(serializeNote) });
+  const tagsByNote = await fetchTagsFor(rows.map((r) => r.id));
+  return c.json({ notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? [])) });
 });
 
 notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) => {
@@ -42,7 +43,7 @@ notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) 
       bodyMd: input.body_md ?? null
     })
     .returning();
-  return c.json(serializeNote(created!), 201);
+  return c.json(serializeNote(created!, []), 201);
 });
 
 const SearchQuerySchema = z.object({ q: z.string().min(1) });
@@ -68,7 +69,8 @@ notesRoute.get("/:id", zValidator("param", idParam, zodErrorHook), async (c) => 
   const { id } = c.req.valid("param");
   const [row] = await db.select().from(notes).where(eq(notes.id, id));
   if (!row) throw notFound("note", id);
-  return c.json(serializeNote(row));
+  const tagsByNote = await fetchTagsFor([id]);
+  return c.json(serializeNote(row, tagsByNote.get(id) ?? []));
 });
 
 notesRoute.patch(
@@ -108,7 +110,8 @@ notesRoute.patch(
       .where(eq(notes.id, id))
       .returning();
 
-    return c.json(serializeNote(updated!));
+    const tagsByNote = await fetchTagsFor([id]);
+    return c.json(serializeNote(updated!, tagsByNote.get(id) ?? []));
   }
 );
 
@@ -123,12 +126,32 @@ notesRoute.delete("/:id", zValidator("param", idParam, zodErrorHook), async (c) 
   return c.body(null, 204);
 });
 
-function serializeNote(row: typeof notes.$inferSelect) {
+async function fetchTagsFor(noteIds: string[]): Promise<Map<string, string[]>> {
+  if (noteIds.length === 0) return new Map();
+  const rows = await db
+    .select({ noteId: noteTags.noteId, name: tags.name })
+    .from(noteTags)
+    .innerJoin(tags, eq(tags.id, noteTags.tagId))
+    .where(inArray(noteTags.noteId, noteIds));
+  const map = new Map<string, string[]>();
+  for (const r of rows) {
+    const existing = map.get(r.noteId);
+    if (existing) existing.push(r.name);
+    else map.set(r.noteId, [r.name]);
+  }
+  return map;
+}
+
+function serializeNote(
+  row: typeof notes.$inferSelect,
+  tagNames: string[] = []
+) {
   return {
     id: row.id,
     type: row.type,
     title: row.title,
     body_md: row.bodyMd,
+    tags: tagNames.sort(),
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
     archived_at: row.archivedAt?.toISOString() ?? null,
