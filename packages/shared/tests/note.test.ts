@@ -46,6 +46,34 @@ describe("NewNoteSchema", () => {
     const parsed = NewNoteSchema.parse({ title: "Topic", type: "topic" });
     expect(parsed.body_md).toBeUndefined();
   });
+
+  it("allows body_md: null on a topic note", () => {
+    const parsed = NewNoteSchema.parse({
+      title: "Topic",
+      type: "topic",
+      body_md: null
+    });
+    expect(parsed.body_md).toBeNull();
+  });
+
+  it("rejects a non-null body_md on a topic note", () => {
+    expect(() =>
+      NewNoteSchema.parse({
+        title: "Topic",
+        type: "topic",
+        body_md: "still forbidden"
+      })
+    ).toThrow();
+  });
+
+  it("allows body_md: null on a permanent note (explicit clear)", () => {
+    const parsed = NewNoteSchema.parse({
+      title: "Perm",
+      type: "permanent",
+      body_md: null
+    });
+    expect(parsed.body_md).toBeNull();
+  });
 });
 
 describe("NoteSchema", () => {
@@ -55,11 +83,13 @@ describe("NoteSchema", () => {
       type: "permanent",
       title: "Idea",
       body_md: "Body",
+      tags: ["focus"],
       created_at: "2026-05-15T10:00:00.000Z",
       updated_at: "2026-05-15T10:00:00.000Z",
       archived_at: null,
       notion_page_id: null
     });
     expect(note.type).toBe("permanent");
+    expect(note.tags).toEqual(["focus"]);
   });
 });

@@ -59,3 +59,51 @@ ul {
   margin-right: 4px;
   font-size: 12px;
 }
+
+.links-panel {
+  padding: 12px;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 4px;
+}
+
+.links-panel h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+.links-panel-group {
+  margin-bottom: 12px;
+}
+
+.links-panel-group:last-child {
+  margin-bottom: 0;
+}
+
+.links-panel-empty {
+  color: #555;
+  font-size: 13px;
+}
+
+.note-top-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.note-type-chip {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+  color: #aaa;
+}

@@ -93,6 +93,21 @@ describe("GET /api/notes", () => {
     const res = await app.request("/api/notes");
     expect(res.status).toBe(200);
   });
+
+  it("includes tags on each note in list", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "A", type: "permanent" })
+    ).json()) as { id: string };
+    await app.request(`/api/notes/${created.id}/tags`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tags: ["x"] })
+    });
+
+    const res = await app.request("/api/notes");
+    const body = (await res.json()) as { notes: { tags: string[] }[] };
+    expect(body.notes[0]!.tags).toEqual(["x"]);
+  });
 });
 
 describe("GET /api/notes/:id", () => {
@@ -117,6 +132,22 @@ describe("GET /api/notes/:id", () => {
   it("returns 400 for non-uuid id", async () => {
     const res = await app.request("/api/notes/not-a-uuid");
     expect(res.status).toBe(400);
+  });
+
+  it("includes tags in the response", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Tagged", type: "permanent" })
+    ).json()) as { id: string };
+
+    await app.request(`/api/notes/${created.id}/tags`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tags: ["alpha", "beta"] })
+    });
+
+    const res = await app.request(`/api/notes/${created.id}`);
+    const note = (await res.json()) as { tags: string[] };
+    expect(note.tags.sort()).toEqual(["alpha", "beta"]);
   });
 });
 
@@ -187,6 +218,45 @@ describe("PATCH /api/notes/:id", () => {
     );
     expect(res.status).toBe(400);
   });
+
+  it("rejects type permanent → topic with existing body (no body clear)", async () => {
+    const created = (await (
+      await post("/api/notes", {
+        title: "P",
+        type: "permanent",
+        body_md: "stays around"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    const res = await patch(
+      `/api/notes/${created.id}`,
+      { type: "topic" },
+      { "if-match": created.updated_at }
+    );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/body_md: null/);
+  });
+
+  it("allows type permanent → topic when body is cleared to null in same request", async () => {
+    const created = (await (
+      await post("/api/notes", {
+        title: "P",
+        type: "permanent",
+        body_md: "will go away"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    const res = await patch(
+      `/api/notes/${created.id}`,
+      { type: "topic", body_md: null },
+      { "if-match": created.updated_at }
+    );
+    expect(res.status).toBe(200);
+    const note = (await res.json()) as { type: string; body_md: string | null };
+    expect(note.type).toBe("topic");
+    expect(note.body_md).toBeNull();
+  });
 });
 
 describe("DELETE /api/notes/:id", () => {
@@ -207,5 +277,138 @@ describe("DELETE /api/notes/:id", () => {
       await app.request("/api/notes?include_archived=true")
     ).json();
     expect((withArchived as { notes: unknown[] }).notes).toHaveLength(1);
+  });
+});
+
+describe("GET /api/notes/search", () => {
+  it("returns matching notes by title (case-insensitive)", async () => {
+    await post("/api/notes", { title: "Foucault: Discipline", type: "literature" });
+    await post("/api/notes", { title: "Foucault: Power", type: "literature" });
+    await post("/api/notes", { title: "Other thing", type: "permanent" });
+
+    const res = await app.request("/api/notes/search?q=foucault");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      notes: { id: string; title: string; type: string }[];
+    };
+    expect(body.notes).toHaveLength(2);
+    expect(body.notes.every((n) => n.title.includes("Foucault"))).toBe(true);
+  });
+
+  it("returns empty array when nothing matches", async () => {
+    await post("/api/notes", { title: "Hello", type: "permanent" });
+    const res = await app.request("/api/notes/search?q=zzzzz");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { notes: unknown[] };
+    expect(body.notes).toEqual([]);
+  });
+
+  it("returns 400 on missing q", async () => {
+    const res = await app.request("/api/notes/search");
+    expect(res.status).toBe(400);
+  });
+
+  it("excludes archived notes", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Visible", type: "permanent" })
+    ).json()) as { id: string };
+    await app.request(`/api/notes/${created.id}`, { method: "DELETE" });
+
+    const res = await app.request("/api/notes/search?q=visible");
+    const body = (await res.json()) as { notes: unknown[] };
+    expect(body.notes).toEqual([]);
+  });
+
+  it("limits results to 10", async () => {
+    for (let i = 0; i < 15; i++) {
+      await post("/api/notes", { title: `Note ${i}`, type: "fleeting" });
+    }
+    const res = await app.request("/api/notes/search?q=note");
+    const body = (await res.json()) as { notes: unknown[] };
+    expect(body.notes).toHaveLength(10);
+  });
+});
+
+describe("wikilink sync on note write", () => {
+  it("POST with a wikilink creates the corresponding note_link", async () => {
+    const target = (await (
+      await post("/api/notes", { title: "Target", type: "permanent" })
+    ).json()) as { id: string };
+
+    const created = (await (
+      await post("/api/notes", {
+        title: "Source",
+        type: "permanent",
+        body_md: "see [[Target]]"
+      })
+    ).json()) as { id: string };
+
+    const links = await (
+      await app.request(`/api/notes/${created.id}/links`)
+    ).json();
+    expect((links as { outgoing: { to_note_id: string }[] }).outgoing).toHaveLength(1);
+    expect((links as { outgoing: { to_note_id: string }[] }).outgoing[0]!.to_note_id).toBe(
+      target.id
+    );
+  });
+
+  it("PATCH that removes a wikilink removes the note_link", async () => {
+    await post("/api/notes", { title: "T", type: "permanent" });
+    const src = (await (
+      await post("/api/notes", {
+        title: "S",
+        type: "permanent",
+        body_md: "[[T]]"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    await app.request(`/api/notes/${src.id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "if-match": src.updated_at
+      },
+      body: JSON.stringify({ body_md: "no link now" })
+    });
+
+    const links = (await (
+      await app.request(`/api/notes/${src.id}/links`)
+    ).json()) as { outgoing: unknown[] };
+    expect(links.outgoing).toEqual([]);
+  });
+
+  it("manual links survive a wikilink-less PATCH", async () => {
+    const target = (await (
+      await post("/api/notes", { title: "T", type: "permanent" })
+    ).json()) as { id: string };
+    const src = (await (
+      await post("/api/notes", {
+        title: "S",
+        type: "permanent",
+        body_md: "first"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    await post("/api/links", {
+      from_note_id: src.id,
+      to_note_id: target.id,
+      link_type: "supports"
+    });
+
+    await app.request(`/api/notes/${src.id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "if-match": src.updated_at
+      },
+      body: JSON.stringify({ body_md: "updated body" })
+    });
+
+    const links = (await (
+      await app.request(`/api/notes/${src.id}/links`)
+    ).json()) as { outgoing: { link_type: string; source: string }[] };
+    expect(links.outgoing).toHaveLength(1);
+    expect(links.outgoing[0]!.link_type).toBe("supports");
+    expect(links.outgoing[0]!.source).toBe("manual");
   });
 });

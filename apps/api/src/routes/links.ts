@@ -6,11 +6,12 @@ import { NewNoteLinkSchema } from "@zk/shared";
 import { db } from "../db/client";
 import { noteLinks, notes } from "../db/schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
+import { zodErrorHook } from "../lib/zod-error-hook";
 
 export const linksRoute = new Hono();
 export const noteLinksRoute = new Hono();
 
-linksRoute.post("/", zValidator("json", NewNoteLinkSchema), async (c) => {
+linksRoute.post("/", zValidator("json", NewNoteLinkSchema, zodErrorHook), async (c) => {
   const input = c.req.valid("json");
 
   const found = await db
@@ -28,20 +29,20 @@ linksRoute.post("/", zValidator("json", NewNoteLinkSchema), async (c) => {
         fromNoteId: input.from_note_id,
         toNoteId: input.to_note_id,
         linkType: input.link_type,
-        context: input.context ?? null
+        context: input.context ?? null,
+        source: "manual"
       })
       .returning();
     return c.json(serializeLink(created!), 201);
   } catch (err) {
-    if (
-      err instanceof Error &&
-      err.message.includes("note_link_unique")
-    ) {
+    const pgErr = err as { code?: string; constraint_name?: string };
+    // 23505 = unique_violation, 23514 = check_violation (SQLSTATE)
+    if (pgErr.code === "23505" && pgErr.constraint_name === "note_link_unique") {
       throw conflict("link already exists for that pair and type");
     }
     if (
-      err instanceof Error &&
-      err.message.includes("note_link_not_self")
+      pgErr.code === "23514" &&
+      pgErr.constraint_name === "note_link_not_self"
     ) {
       throw badRequest("from and to must differ");
     }
@@ -51,7 +52,7 @@ linksRoute.post("/", zValidator("json", NewNoteLinkSchema), async (c) => {
 
 linksRoute.delete(
   "/:id",
-  zValidator("param", z.object({ id: z.string().uuid() })),
+  zValidator("param", z.object({ id: z.string().uuid() }), zodErrorHook),
   async (c) => {
     const { id } = c.req.valid("param");
     const result = await db
@@ -65,7 +66,7 @@ linksRoute.delete(
 
 noteLinksRoute.get(
   "/:id/links",
-  zValidator("param", z.object({ id: z.string().uuid() })),
+  zValidator("param", z.object({ id: z.string().uuid() }), zodErrorHook),
   async (c) => {
     const { id } = c.req.valid("param");
     const [exists] = await db
@@ -99,6 +100,7 @@ function serializeLink(row: typeof noteLinks.$inferSelect) {
     to_note_id: row.toNoteId,
     link_type: row.linkType,
     context: row.context,
+    source: row.source,
     created_at: row.createdAt.toISOString()
   };
 }

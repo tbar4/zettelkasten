@@ -12,8 +12,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.18.3",
+    "@codemirror/lang-markdown": "^6.3.1",
+    "@codemirror/language": "^6.10.6",
+    "@codemirror/state": "^6.5.0",
+    "@codemirror/view": "^6.35.0",
     "@tanstack/react-query": "^5.59.20",
     "@tanstack/react-router": "^1.82.0",
+    "@uiw/react-codemirror": "^4.23.7",
     "@zk/shared": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

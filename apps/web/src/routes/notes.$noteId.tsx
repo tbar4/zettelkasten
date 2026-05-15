@@ -6,6 +6,9 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api-client";
+import { NoteEditor } from "../components/NoteEditor";
+import { LinksPanel } from "../components/LinksPanel";
+import { NoteTopBar } from "../components/NoteTopBar";
 
 export const Route = createFileRoute("/notes/$noteId")({
   component: NoteDetail
@@ -47,6 +50,7 @@ function NoteDetail() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notes", noteId] });
+      qc.invalidateQueries({ queryKey: ["notes", noteId, "links"] });
       qc.invalidateQueries({ queryKey: ["notes"] });
     }
   });
@@ -72,13 +76,7 @@ function NoteDetail() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <button onClick={() => router.history.back()}>← Back</button>
-        <span style={{ color: "#888" }}>
-          {noteQuery.data.type} · updated{" "}
-          {new Date(noteQuery.data.updated_at).toLocaleString()}
-        </span>
-      </div>
+      <NoteTopBar note={noteQuery.data} onBack={() => router.history.back()} />
 
       <input
         value={title}
@@ -86,38 +84,46 @@ function NoteDetail() {
         style={{ width: "100%", fontSize: 24, marginTop: 16 }}
       />
 
-      {isTopic ? (
-        <p style={{ color: "#888", marginTop: 16 }}>
-          Topic notes have no body. The title is the description.
-        </p>
-      ) : (
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={20}
-          style={{ width: "100%", marginTop: 16, fontFamily: "ui-monospace" }}
-        />
-      )}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 280px",
+          gap: 16,
+          marginTop: 16
+        }}
+      >
+        <div>
+          {isTopic ? (
+            <p style={{ color: "#888" }}>
+              Topic notes have no body. The title is the description.
+            </p>
+          ) : (
+            <NoteEditor value={body} onChange={setBody} />
+          )}
 
-      <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-        <button
-          onClick={() => updateMutation.mutate()}
-          disabled={updateMutation.isPending}
-        >
-          {updateMutation.isPending ? "Saving…" : "Save"}
-        </button>
-        <button
-          onClick={() => {
-            if (confirm("Archive this note?")) archiveMutation.mutate();
-          }}
-        >
-          Archive
-        </button>
-        {updateMutation.isError && (
-          <span style={{ color: "#f7768e", alignSelf: "center" }}>
-            {String(updateMutation.error)}
-          </span>
-        )}
+          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            <button
+              onClick={() => updateMutation.mutate()}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "Saving…" : "Save"}
+            </button>
+            <button
+              onClick={() => {
+                if (confirm("Archive this note?")) archiveMutation.mutate();
+              }}
+            >
+              Archive
+            </button>
+            {updateMutation.isError && (
+              <span style={{ color: "#f7768e", alignSelf: "center" }}>
+                {String(updateMutation.error)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <LinksPanel noteId={noteId} />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { Note, NewNote } from "@zk/shared";
+import type { Note, NewNote, NoteLink } from "@zk/shared";
 
 async function request<T>(
   path: string,
@@ -56,5 +56,16 @@ export const api = {
 
   archiveNote(id: string): Promise<void> {
     return request(`/api/notes/${id}`, { method: "DELETE" });
+  },
+
+  searchNotes(q: string): Promise<{ notes: Pick<Note, "id" | "title" | "type">[] }> {
+    const qs = new URLSearchParams({ q }).toString();
+    return request(`/api/notes/search?${qs}`, { method: "GET" });
+  },
+
+  getNoteLinks(
+    id: string
+  ): Promise<{ outgoing: NoteLink[]; incoming: NoteLink[] }> {
+    return request(`/api/notes/${id}/links`, { method: "GET" });
   }
 };
