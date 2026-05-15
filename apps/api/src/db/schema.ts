@@ -7,7 +7,8 @@ import {
   uniqueIndex,
   index,
   primaryKey,
-  check
+  check,
+  customType
 } from "drizzle-orm/pg-core";
 import { sql, relations } from "drizzle-orm";
 
@@ -31,6 +32,12 @@ export const linkTypeEnum = pgEnum("link_type", [
 
 export const linkSourceEnum = pgEnum("link_source", ["wikilink", "manual"]);
 
+const tsvector = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return "tsvector";
+  }
+});
+
 export const notes = pgTable(
   "note",
   {
@@ -45,13 +52,15 @@ export const notes = pgTable(
       .defaultNow()
       .notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
-    notionPageId: text("notion_page_id")
+    notionPageId: text("notion_page_id"),
+    tsv: tsvector("tsv")
   },
   (t) => [
     uniqueIndex("note_notion_page_id_idx")
       .on(t.notionPageId)
       .where(sql`${t.notionPageId} IS NOT NULL`),
     index("note_type_idx").on(t.type),
+    index("note_tsv_idx").using("gin", t.tsv),
     check(
       "note_topic_body_null",
       sql`(${t.type} <> 'topic') OR (${t.bodyMd} IS NULL)`

@@ -15,6 +15,13 @@
       "when": 1778877483033,
       "tag": "0001_link_source",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778881041321,
+      "tag": "0002_notes_fts",
+      "breakpoints": true
     }
   ]
 }
