@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api-client";
 import { InboxReviewPane } from "../components/InboxReviewPane";
 import { InboxFleetingPane } from "../components/InboxFleetingPane";
+import { InboxHighlightsPane } from "../components/InboxHighlightsPane";
 
 export const Route = createFileRoute("/inbox")({
   component: InboxPage
@@ -27,6 +28,7 @@ function InboxPage() {
       <h2>Inbox</h2>
       <InboxReviewPane items={inboxQuery.data.due} />
       <InboxFleetingPane items={inboxQuery.data.fleeting} />
+      <InboxHighlightsPane items={inboxQuery.data.highlights} />
     </div>
   );
 }
