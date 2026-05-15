@@ -75,5 +75,18 @@ export const api = {
     id: string
   ): Promise<{ outgoing: NoteLink[]; incoming: NoteLink[] }> {
     return request(`/api/notes/${id}/links`, { method: "GET" });
+  },
+
+  setNoteTags(noteId: string, tagNames: string[]): Promise<{ tags: string[] }> {
+    return request(`/api/notes/${noteId}/tags`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tags: tagNames })
+    });
+  },
+
+  suggestTags(q: string): Promise<{ tags: { name: string; count: number }[] }> {
+    const qs = new URLSearchParams({ q }).toString();
+    return request(`/api/tags/suggest?${qs}`, { method: "GET" });
   }
 };
