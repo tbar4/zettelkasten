@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { and, asc, desc, eq, isNull, lte, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { notes, spacedReview } from "@zk/db-schema";
+import { notes, spacedReview, sources, highlights } from "@zk/db-schema";
 
 export const inboxRoute = new Hono();
 
@@ -32,6 +32,24 @@ inboxRoute.get("/", async (c) => {
     .orderBy(desc(notes.createdAt))
     .limit(50);
 
+  const highlightRows = await db
+    .select({
+      id: highlights.id,
+      text: highlights.text,
+      source_title: sources.title,
+      source_id: sources.id
+    })
+    .from(highlights)
+    .innerJoin(sources, eq(sources.id, highlights.sourceId))
+    .where(
+      and(
+        isNull(highlights.promotedToNoteId),
+        isNull(highlights.dismissedAt)
+      )
+    )
+    .orderBy(desc(highlights.createdAt))
+    .limit(50);
+
   return c.json({
     due: dueRows.map((r) => ({
       id: r.id,
@@ -40,6 +58,6 @@ inboxRoute.get("/", async (c) => {
       next_due_at: r.next_due_at.toISOString()
     })),
     fleeting: fleetingRows,
-    highlights: [] as { id: string; text: string }[]
+    highlights: highlightRows
   });
 });
