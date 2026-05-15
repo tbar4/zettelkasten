@@ -68,7 +68,6 @@ function HomePage() {
       <ul>
         {notesQuery.data?.notes.map((n) => (
           <li key={n.id} className="note-row">
-            {/* @ts-expect-error: route /notes/$noteId added in Task 12 */}
             <Link to="/notes/$noteId" params={{ noteId: n.id }}>
               {n.title}
             </Link>{" "}
