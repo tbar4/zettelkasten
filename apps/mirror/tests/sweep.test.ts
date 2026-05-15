@@ -5,7 +5,7 @@ import { join } from "path";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { sql as rawSql, eq } from "drizzle-orm";
-import * as schema from "../../api/src/db/schema";
+import * as schema from "@zk/db-schema";
 import { runSweep } from "../src/sweep";
 
 const url =
@@ -19,7 +19,7 @@ let mirrorDir = "";
 
 beforeEach(async () => {
   await db.execute(
-    rawSql`TRUNCATE TABLE spaced_review, note_tag, note_link, tag, note RESTART IDENTITY CASCADE`
+    rawSql`TRUNCATE TABLE note_source, highlight, source, spaced_review, note_tag, note_link, tag, note RESTART IDENTITY CASCADE`
   );
   if (mirrorDir) await rm(mirrorDir, { recursive: true, force: true });
   mirrorDir = await mkdtemp(join(tmpdir(), "zk-mirror-"));
@@ -86,5 +86,27 @@ describe("runSweep", () => {
     expect(after).toHaveLength(1);
     expect(after[0]).toContain("new-title");
     expect(after[0]).not.toContain("old-title");
+  });
+
+  it("does not rewrite a file when content is unchanged", async () => {
+    await db
+      .insert(schema.notes)
+      .values({ type: "permanent", title: "Stable", bodyMd: "x" })
+      .returning();
+    await runSweep(url, mirrorDir);
+    const files = (await readdir(mirrorDir)).filter((f) => f.endsWith(".md"));
+    expect(files).toHaveLength(1);
+    const fsPromises = await import("fs/promises");
+    const mtimeBefore = (
+      await fsPromises.stat(join(mirrorDir, files[0]!))
+    ).mtimeMs;
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    await runSweep(url, mirrorDir);
+    const mtimeAfter = (
+      await fsPromises.stat(join(mirrorDir, files[0]!))
+    ).mtimeMs;
+    expect(mtimeAfter).toBe(mtimeBefore);
   });
 });

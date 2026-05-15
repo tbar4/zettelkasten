@@ -156,3 +156,71 @@ export const noteTagsRelations = relations(noteTags, ({ one }) => ({
   note: one(notes, { fields: [noteTags.noteId], references: [notes.id] }),
   tag: one(tags, { fields: [noteTags.tagId], references: [tags.id] })
 }));
+
+export const sources = pgTable(
+  "source",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull(),
+    author: text("author"),
+    sourceType: text("source_type"),
+    url: text("url"),
+    isbn: text("isbn"),
+    readwiseBookId: text("readwise_book_id"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (t) => [
+    uniqueIndex("source_readwise_id_idx")
+      .on(t.readwiseBookId)
+      .where(sql`${t.readwiseBookId} IS NOT NULL`)
+  ]
+);
+
+export const highlights = pgTable(
+  "highlight",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => sources.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    noteText: text("note_text"),
+    location: text("location"),
+    color: text("color"),
+    readwiseHighlightId: text("readwise_highlight_id"),
+    promotedToNoteId: uuid("promoted_to_note_id").references(() => notes.id, {
+      onDelete: "set null"
+    }),
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (t) => [
+    uniqueIndex("highlight_readwise_id_idx")
+      .on(t.readwiseHighlightId)
+      .where(sql`${t.readwiseHighlightId} IS NOT NULL`),
+    index("highlight_source_idx").on(t.sourceId),
+    index("highlight_unprocessed_idx")
+      .on(t.sourceId)
+      .where(sql`${t.promotedToNoteId} IS NULL AND ${t.dismissedAt} IS NULL`)
+  ]
+);
+
+export const noteSources = pgTable(
+  "note_source",
+  {
+    noteId: uuid("note_id")
+      .notNull()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => sources.id, { onDelete: "cascade" })
+  },
+  (t) => [primaryKey({ columns: [t.noteId, t.sourceId] })]
+);

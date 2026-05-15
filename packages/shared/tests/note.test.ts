@@ -84,6 +84,7 @@ describe("NoteSchema", () => {
       title: "Idea",
       body_md: "Body",
       tags: ["focus"],
+      sources: [],
       created_at: "2026-05-15T10:00:00.000Z",
       updated_at: "2026-05-15T10:00:00.000Z",
       archived_at: null,

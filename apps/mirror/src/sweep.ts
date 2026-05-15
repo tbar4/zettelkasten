@@ -3,7 +3,7 @@ import { join } from "path";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, inArray, isNull } from "drizzle-orm";
-import { notes, noteLinks, noteTags, tags } from "./schema-mirror";
+import { notes, noteLinks, noteTags, tags } from "@zk/db-schema";
 import { fileNameFor } from "./slug";
 import { serialize } from "./frontmatter";
 import { openOrInitRepo, commitAll } from "./git";
@@ -94,7 +94,16 @@ export async function runSweep(
     let deleted = 0;
 
     for (const [name, content] of desired) {
-      await writeFile(join(mirrorDir, name), content, "utf8");
+      const path = join(mirrorDir, name);
+      let existing: string | null = null;
+      try {
+        const fsPromises = await import("fs/promises");
+        existing = await fsPromises.readFile(path, "utf8");
+      } catch {
+        existing = null;
+      }
+      if (existing === content) continue;
+      await writeFile(path, content, "utf8");
       written++;
     }
     for (const f of existing) {

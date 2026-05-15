@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { extractWikilinks } from "@zk/shared";
 import type { db as DB } from "../db/client";
-import { notes, noteLinks } from "../db/schema";
+import { notes, noteLinks } from "@zk/db-schema";
 
 // Accept either the top-level db instance or a transaction handle (which lacks
 // `$client` but shares all query-builder methods). Using a structural pick of

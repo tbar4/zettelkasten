@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, afterAll } from "vitest";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { sql as rawSql } from "drizzle-orm";
-import * as schema from "../src/db/schema";
+import * as schema from "@zk/db-schema";
 
 process.env.NODE_ENV = "test";
 
@@ -21,7 +21,7 @@ beforeAll(() => {
 beforeEach(async () => {
   // Wipe data between tests. TRUNCATE CASCADE keeps schema, drops rows.
   await db.execute(
-    rawSql`TRUNCATE TABLE spaced_review, note_tag, note_link, tag, note RESTART IDENTITY CASCADE`
+    rawSql`TRUNCATE TABLE note_source, highlight, source, spaced_review, note_tag, note_link, tag, note RESTART IDENTITY CASCADE`
   );
 });
 

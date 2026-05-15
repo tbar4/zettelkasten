@@ -4,7 +4,7 @@ import { z } from "zod";
 import { desc, eq, or } from "drizzle-orm";
 import { NewNoteLinkSchema } from "@zk/shared";
 import { db } from "../db/client";
-import { noteLinks, notes } from "../db/schema";
+import { noteLinks, notes } from "@zk/db-schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
 import { zodErrorHook } from "../lib/zod-error-hook";
 

@@ -15,7 +15,6 @@ interface InboxFleetingPaneProps {
 export function InboxFleetingPane({ items }: InboxFleetingPaneProps) {
   const qc = useQueryClient();
 
-  // Promote requires the current updated_at for If-Match. Fetch lazily on click.
   const promoteMutation = useMutation({
     mutationFn: async (noteId: string) => {
       const note = await api.getNote(noteId);
@@ -35,41 +34,46 @@ export function InboxFleetingPane({ items }: InboxFleetingPaneProps) {
     }
   });
 
+  const pendingId = promoteMutation.variables ?? archiveMutation.variables;
+
   return (
     <div className="inbox-pane">
       <h3>Fleeting ({items.length})</h3>
       {items.length === 0 ? (
         <p className="inbox-empty">No fleeting notes to process.</p>
       ) : (
-        items.map((n) => (
-          <div key={n.id} className="inbox-row">
-            <Link
-              to="/notes/$noteId"
-              params={{ noteId: n.id }}
-              className="inbox-row-title"
-            >
-              {n.title}
-            </Link>
-            <div className="inbox-row-actions">
-              <button
-                onClick={() => promoteMutation.mutate(n.id)}
-                disabled={promoteMutation.isPending}
+        items.map((n) => {
+          const rowPending = pendingId === n.id;
+          return (
+            <div key={n.id} className="inbox-row">
+              <Link
+                to="/notes/$noteId"
+                params={{ noteId: n.id }}
+                className="inbox-row-title"
               >
-                Promote
-              </button>
-              <button
-                onClick={() => {
-                  if (confirm("Archive this fleeting note?")) {
-                    archiveMutation.mutate(n.id);
-                  }
-                }}
-                disabled={archiveMutation.isPending}
-              >
-                Archive
-              </button>
+                {n.title}
+              </Link>
+              <div className="inbox-row-actions">
+                <button
+                  onClick={() => promoteMutation.mutate(n.id)}
+                  disabled={rowPending}
+                >
+                  Promote
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm("Archive this fleeting note?")) {
+                      archiveMutation.mutate(n.id);
+                    }
+                  }}
+                  disabled={rowPending}
+                >
+                  Archive
+                </button>
+              </div>
             </div>
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, sql } from "drizzle-orm";
-import * as schema from "../src/db/schema";
+import * as schema from "@zk/db-schema";
 import { app } from "../src/server";
 
 const url =
@@ -71,5 +71,60 @@ describe("GET /api/inbox", () => {
     };
     expect(body.due).toEqual([]);
     expect(body.fleeting).toEqual([]);
+  });
+
+  it("includes un-promoted highlights with their source title", async () => {
+    const [source] = await db
+      .insert(schema.sources)
+      .values({ title: "Some Book" })
+      .returning();
+    const [highlight] = await db
+      .insert(schema.highlights)
+      .values({ sourceId: source!.id, text: "important quote" })
+      .returning();
+
+    const res = await app.request("/api/inbox");
+    const body = (await res.json()) as {
+      highlights: {
+        id: string;
+        text: string;
+        source_title: string;
+      }[];
+    };
+    expect(body.highlights).toHaveLength(1);
+    expect(body.highlights[0]!.id).toBe(highlight!.id);
+    expect(body.highlights[0]!.source_title).toBe("Some Book");
+    expect(body.highlights[0]!.text).toBe("important quote");
+  });
+
+  it("excludes promoted and dismissed highlights", async () => {
+    const [source] = await db
+      .insert(schema.sources)
+      .values({ title: "Book" })
+      .returning();
+    const [note] = await db
+      .insert(schema.notes)
+      .values({ type: "literature", title: "lit" })
+      .returning();
+    await db.insert(schema.highlights).values({
+      sourceId: source!.id,
+      text: "promoted",
+      promotedToNoteId: note!.id
+    });
+    await db.insert(schema.highlights).values({
+      sourceId: source!.id,
+      text: "dismissed",
+      dismissedAt: new Date()
+    });
+    await db.insert(schema.highlights).values({
+      sourceId: source!.id,
+      text: "untouched"
+    });
+
+    const res = await app.request("/api/inbox");
+    const body = (await res.json()) as {
+      highlights: { text: string }[];
+    };
+    expect(body.highlights.map((h) => h.text)).toEqual(["untouched"]);
   });
 });

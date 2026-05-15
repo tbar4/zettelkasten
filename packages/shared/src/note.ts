@@ -42,6 +42,14 @@ export const NoteSchema = z.object({
   title: z.string(),
   body_md: z.string().nullable(),
   tags: z.array(z.string()),
+  sources: z.array(
+    z.object({
+      id: z.string().uuid(),
+      title: z.string(),
+      author: z.string().nullable(),
+      url: z.string().nullable()
+    })
+  ),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   archived_at: z.string().datetime().nullable(),

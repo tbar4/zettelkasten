@@ -110,7 +110,7 @@ export const api = {
   getInbox(): Promise<{
     due: { id: string; title: string; type: string; next_due_at: string }[];
     fleeting: { id: string; title: string; type: string }[];
-    highlights: { id: string; text: string }[];
+    highlights: { id: string; text: string; source_title: string }[];
   }> {
     return request("/api/inbox", { method: "GET" });
   },
@@ -134,6 +134,17 @@ export const api = {
         "if-match": ifMatch
       },
       body: JSON.stringify({ type: "permanent" })
+    });
+  },
+
+  promoteHighlight(
+    highlightId: string,
+    titleOverride?: string
+  ): Promise<Note> {
+    return request(`/api/highlights/${highlightId}/promote`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(titleOverride ? { title: titleOverride } : {})
     });
   }
 };
