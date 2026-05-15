@@ -8,6 +8,6 @@
     "lib": ["ES2022"],
     "noEmit": false
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "tests/**/*", "vitest.config.ts", "drizzle.config.ts"],
   "references": [{ "path": "../../packages/shared" }]
 }

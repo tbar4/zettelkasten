@@ -731,7 +731,7 @@ git commit -m "feat(shared): zod schemas for note, link, tag"
 
 - [ ] **Step 2: Create `apps/api/tsconfig.json`**
 
-`lib` is overridden to drop DOM types — this is Node-only code; importing browser globals like `window` or `document` should be a type error. `rootDir: "."` plus including `tests/**/*` lets both source and test files be part of the project (test files can't be outside `rootDir`).
+`lib` is overridden to drop DOM types — this is Node-only code; importing browser globals like `window` or `document` should be a type error. `rootDir: "."` plus including `tests/**/*` lets both source and test files be part of the project. The config files at the package root (`vitest.config.ts`, `drizzle.config.ts`) are also included so the language server resolves their imports.
 
 ```json
 {
@@ -744,7 +744,7 @@ git commit -m "feat(shared): zod schemas for note, link, tag"
     "lib": ["ES2022"],
     "noEmit": false
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "tests/**/*", "vitest.config.ts", "drizzle.config.ts"],
   "references": [{ "path": "../../packages/shared" }]
 }
 ```
