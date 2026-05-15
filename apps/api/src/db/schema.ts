@@ -8,7 +8,8 @@ import {
   index,
   primaryKey,
   check,
-  customType
+  customType,
+  integer
 } from "drizzle-orm/pg-core";
 import { sql, relations } from "drizzle-orm";
 
@@ -115,6 +116,21 @@ export const noteTags = pgTable(
     primaryKey({ columns: [t.noteId, t.tagId] }),
     index("note_tag_tag_idx").on(t.tagId)
   ]
+);
+
+export const spacedReview = pgTable(
+  "spaced_review",
+  {
+    noteId: uuid("note_id")
+      .primaryKey()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    nextDueAt: timestamp("next_due_at", { withTimezone: true }).notNull(),
+    intervalDays: integer("interval_days").notNull().default(1)
+  },
+  (t) => [index("spaced_review_next_due_idx").on(t.nextDueAt)]
 );
 
 export const notesRelations = relations(notes, ({ many }) => ({
