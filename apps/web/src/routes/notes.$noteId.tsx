@@ -9,6 +9,7 @@ import { api } from "../lib/api-client";
 import { NoteEditor } from "../components/NoteEditor";
 import { LinksPanel } from "../components/LinksPanel";
 import { NoteTopBar } from "../components/NoteTopBar";
+import { LiteratureSourceBlock } from "../components/LiteratureSourceBlock";
 
 export const Route = createFileRoute("/notes/$noteId")({
   component: NoteDetail
@@ -79,6 +80,10 @@ function NoteDetail() {
   return (
     <div>
       <NoteTopBar note={noteQuery.data} onBack={() => router.history.back()} />
+
+      {noteQuery.data.type === "literature" && (
+        <LiteratureSourceBlock sources={noteQuery.data.sources} />
+      )}
 
       <input
         value={title}

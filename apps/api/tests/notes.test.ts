@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import * as schema from "@zk/db-schema";
 import { app } from "../src/server";
+
+const url =
+  process.env.DATABASE_URL_TEST ??
+  "postgres://zk:zk@localhost:5433/zettel_test";
+const client = postgres(url, { max: 1 });
+const db = drizzle(client, { schema });
 
 async function post(path: string, body: unknown): Promise<Response> {
   return app.request(path, {
@@ -183,6 +192,29 @@ describe("GET /api/notes/:id", () => {
     const res = await app.request(`/api/notes/${created.id}`);
     const note = (await res.json()) as { tags: string[] };
     expect(note.tags.sort()).toEqual(["alpha", "beta"]);
+  });
+
+  it("includes sources on a literature note linked via note_source", async () => {
+    const litRes = await post("/api/notes", {
+      title: "Lit",
+      type: "literature"
+    });
+    const lit = (await litRes.json()) as { id: string };
+    const [source] = await db
+      .insert(schema.sources)
+      .values({ title: "BookTitle", author: "Author X" })
+      .returning();
+    await db
+      .insert(schema.noteSources)
+      .values({ noteId: lit.id, sourceId: source!.id });
+
+    const res = await app.request(`/api/notes/${lit.id}`);
+    const note = (await res.json()) as {
+      sources: { title: string; author: string | null }[];
+    };
+    expect(note.sources).toHaveLength(1);
+    expect(note.sources[0]!.title).toBe("BookTitle");
+    expect(note.sources[0]!.author).toBe("Author X");
   });
 });
 

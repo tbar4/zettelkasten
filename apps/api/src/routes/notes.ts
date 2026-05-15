@@ -4,7 +4,7 @@ import { z } from "zod";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { NewNoteSchema, NoteType, UpdateNoteSchema } from "@zk/shared";
 import { db } from "../db/client";
-import { notes, noteTags, tags } from "@zk/db-schema";
+import { notes, noteTags, tags, noteSources, sources } from "@zk/db-schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
 import { zodErrorHook } from "../lib/zod-error-hook";
 import { syncWikilinks } from "../lib/wikilinks-sync";
@@ -45,8 +45,11 @@ notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c
       .where(inArray(notes.id, idList))
       .orderBy(desc(notes.createdAt));
     const tagsByNote = await fetchTagsFor(rows.map((r) => r.id));
+    const sourcesByNote = await fetchSourcesFor(rows.map((r) => r.id));
     return c.json({
-      notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? []))
+      notes: rows.map((r) =>
+        serializeNote(r, tagsByNote.get(r.id) ?? [], sourcesByNote.get(r.id) ?? [])
+      )
     });
   }
   const where = and(
@@ -59,8 +62,11 @@ notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c
     .where(where)
     .orderBy(desc(notes.createdAt));
   const tagsByNote = await fetchTagsFor(rows.map((r) => r.id));
+  const sourcesByNote = await fetchSourcesFor(rows.map((r) => r.id));
   return c.json({
-    notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? []))
+    notes: rows.map((r) =>
+      serializeNote(r, tagsByNote.get(r.id) ?? [], sourcesByNote.get(r.id) ?? [])
+    )
   });
 });
 
@@ -81,7 +87,7 @@ notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) 
     }
     return row!;
   });
-  return c.json(serializeNote(created, []), 201);
+  return c.json(serializeNote(created, [], []), 201);
 });
 
 const SearchQuerySchema = z.object({ q: z.string().default("") });
@@ -124,7 +130,10 @@ notesRoute.get("/:id", zValidator("param", idParam, zodErrorHook), async (c) => 
   const [row] = await db.select().from(notes).where(eq(notes.id, id));
   if (!row) throw notFound("note", id);
   const tagsByNote = await fetchTagsFor([id]);
-  return c.json(serializeNote(row, tagsByNote.get(id) ?? []));
+  const sourcesByNote = await fetchSourcesFor([id]);
+  return c.json(
+    serializeNote(row, tagsByNote.get(id) ?? [], sourcesByNote.get(id) ?? [])
+  );
 });
 
 notesRoute.patch(
@@ -174,7 +183,10 @@ notesRoute.patch(
     });
 
     const tagsByNote = await fetchTagsFor([id]);
-    return c.json(serializeNote(updated, tagsByNote.get(id) ?? []));
+    const sourcesByNote = await fetchSourcesFor([id]);
+    return c.json(
+      serializeNote(updated, tagsByNote.get(id) ?? [], sourcesByNote.get(id) ?? [])
+    );
   }
 );
 
@@ -205,9 +217,35 @@ async function fetchTagsFor(noteIds: string[]): Promise<Map<string, string[]>> {
   return map;
 }
 
+async function fetchSourcesFor(
+  noteIds: string[]
+): Promise<Map<string, { id: string; title: string; author: string | null; url: string | null }[]>> {
+  if (noteIds.length === 0) return new Map();
+  const rows = await db
+    .select({
+      noteId: noteSources.noteId,
+      id: sources.id,
+      title: sources.title,
+      author: sources.author,
+      url: sources.url
+    })
+    .from(noteSources)
+    .innerJoin(sources, eq(sources.id, noteSources.sourceId))
+    .where(inArray(noteSources.noteId, noteIds));
+  const map = new Map<string, { id: string; title: string; author: string | null; url: string | null }[]>();
+  for (const r of rows) {
+    const existing = map.get(r.noteId);
+    const entry = { id: r.id, title: r.title, author: r.author, url: r.url };
+    if (existing) existing.push(entry);
+    else map.set(r.noteId, [entry]);
+  }
+  return map;
+}
+
 function serializeNote(
   row: typeof notes.$inferSelect,
-  tagNames: string[] = []
+  tagNames: string[] = [],
+  sourcesList: { id: string; title: string; author: string | null; url: string | null }[] = []
 ) {
   return {
     id: row.id,
@@ -215,6 +253,7 @@ function serializeNote(
     title: row.title,
     body_md: row.bodyMd,
     tags: tagNames.sort(),
+    sources: sourcesList,
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
     archived_at: row.archivedAt?.toISOString() ?? null,
