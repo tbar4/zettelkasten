@@ -7,6 +7,8 @@ import { notesRoute } from "./routes/notes";
 import { linksRoute, noteLinksRoute } from "./routes/links";
 import { tagsRoute, noteTagsRoute } from "./routes/tags";
 import { graphRoute } from "./routes/graph";
+import { reviewRoute } from "./routes/review";
+import { inboxRoute } from "./routes/inbox";
 
 export const app = new Hono();
 
@@ -19,7 +21,9 @@ app.route("/api/notes", noteLinksRoute);
 app.route("/api/links", linksRoute);
 app.route("/api/tags", tagsRoute);
 app.route("/api/notes", noteTagsRoute);
+app.route("/api/notes", reviewRoute);
 app.route("/api/graph", graphRoute);
+app.route("/api/inbox", inboxRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {

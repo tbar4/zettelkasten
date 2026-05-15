@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "vitest.config.ts",
+    "../api/src/db/schema.ts"
+  ],
+  "references": [{ "path": "../../packages/shared" }]
+}

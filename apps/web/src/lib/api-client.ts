@@ -35,6 +35,16 @@ export const api = {
     );
   },
 
+  listNoteSummariesByIds(
+    ids: string[]
+  ): Promise<{ notes: Pick<Note, "id" | "title" | "type">[] }> {
+    if (ids.length === 0) return Promise.resolve({ notes: [] });
+    return request(
+      `/api/notes?ids=${ids.map(encodeURIComponent).join(",")}&fields=id,title,type`,
+      { method: "GET" }
+    );
+  },
+
   getNote(id: string): Promise<Note> {
     return request(`/api/notes/${id}`, { method: "GET" });
   },
@@ -95,5 +105,35 @@ export const api = {
     edges: { id: string; source: string; target: string; link_type: string }[];
   }> {
     return request("/api/graph", { method: "GET" });
+  },
+
+  getInbox(): Promise<{
+    due: { id: string; title: string; type: string; next_due_at: string }[];
+    fleeting: { id: string; title: string; type: string }[];
+    highlights: { id: string; text: string }[];
+  }> {
+    return request("/api/inbox", { method: "GET" });
+  },
+
+  postReview(
+    noteId: string,
+    action: "keep" | "archive"
+  ): Promise<void | { interval_days: number; next_due_at: string }> {
+    return request(`/api/notes/${noteId}/review`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action })
+    });
+  },
+
+  promoteToPermanent(noteId: string, ifMatch: string): Promise<Note> {
+    return request(`/api/notes/${noteId}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "if-match": ifMatch
+      },
+      body: JSON.stringify({ type: "permanent" })
+    });
   }
 };

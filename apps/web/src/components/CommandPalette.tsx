@@ -21,7 +21,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   }, [open]);
 
   const resultsQuery = useQuery({
-    queryKey: ["palette-search", q],
+    queryKey: ["notes", "search", q],
     queryFn: () => api.searchNotes(q),
     enabled: open
   });

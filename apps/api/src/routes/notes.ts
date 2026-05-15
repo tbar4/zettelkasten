@@ -8,12 +8,14 @@ import { notes, noteTags, tags } from "../db/schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
 import { zodErrorHook } from "../lib/zod-error-hook";
 import { syncWikilinks } from "../lib/wikilinks-sync";
+import { scheduleReview } from "../lib/spaced-review";
 
 export const notesRoute = new Hono();
 
 const ListQuerySchema = z.object({
   type: NoteType.optional(),
   ids: z.string().optional(),
+  fields: z.string().optional(),
   include_archived: z
     .enum(["true", "false"])
     .default("false")
@@ -21,13 +23,22 @@ const ListQuerySchema = z.object({
 });
 
 notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c) => {
-  const { type, ids, include_archived } = c.req.valid("query");
+  const { type, ids, fields, include_archived } = c.req.valid("query");
   if (ids !== undefined) {
     const idList = ids
       .split(",")
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
     if (idList.length === 0) return c.json({ notes: [] });
+
+    if (fields === "id,title,type") {
+      const rows = await db
+        .select({ id: notes.id, title: notes.title, type: notes.type })
+        .from(notes)
+        .where(inArray(notes.id, idList));
+      return c.json({ notes: rows });
+    }
+
     const rows = await db
       .select()
       .from(notes)
@@ -65,6 +76,9 @@ notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) 
       })
       .returning();
     await syncWikilinks(tx, row!.id, row!.bodyMd);
+    if (row!.type === "permanent") {
+      await scheduleReview(tx, row!.id);
+    }
     return row!;
   });
   return c.json(serializeNote(created, []), 201);
@@ -152,6 +166,9 @@ notesRoute.patch(
         .returning();
       if (update.body_md !== undefined) {
         await syncWikilinks(tx, id, row!.bodyMd);
+      }
+      if (update.type === "permanent" && existing.type !== "permanent") {
+        await scheduleReview(tx, id);
       }
       return row!;
     });
