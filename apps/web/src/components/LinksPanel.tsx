@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { api } from "../lib/api-client";
 import type { NoteLink } from "@zk/shared";
 
@@ -23,6 +24,26 @@ export function LinksPanel({ noteId }: LinksPanelProps) {
     queryFn: () => api.getNoteLinks(noteId)
   });
 
+  const allReferencedIds = useMemo(() => {
+    if (!linksQuery.data) return [];
+    const ids = new Set<string>();
+    for (const l of linksQuery.data.outgoing) ids.add(l.to_note_id);
+    for (const l of linksQuery.data.incoming) ids.add(l.from_note_id);
+    return [...ids];
+  }, [linksQuery.data]);
+
+  const titlesQuery = useQuery({
+    queryKey: ["notes", "titles", allReferencedIds],
+    queryFn: () => api.listNotesByIds(allReferencedIds),
+    enabled: allReferencedIds.length > 0
+  });
+
+  const titleById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const n of titlesQuery.data?.notes ?? []) map.set(n.id, n.title);
+    return map;
+  }, [titlesQuery.data]);
+
   if (linksQuery.isLoading) {
     return (
       <div className="links-panel">
@@ -41,6 +62,8 @@ export function LinksPanel({ noteId }: LinksPanelProps) {
   const outgoing = groupByType(linksQuery.data.outgoing);
   const incoming = groupByType(linksQuery.data.incoming);
 
+  const labelFor = (id: string) => titleById.get(id) ?? `${id.slice(0, 8)}…`;
+
   return (
     <div className="links-panel">
       <div className="links-panel-group">
@@ -55,7 +78,7 @@ export function LinksPanel({ noteId }: LinksPanelProps) {
                 {links.map((l) => (
                   <li key={l.id}>
                     <Link to="/notes/$noteId" params={{ noteId: l.to_note_id }}>
-                      {l.to_note_id.slice(0, 8)}…
+                      {labelFor(l.to_note_id)}
                     </Link>
                     {l.context && (
                       <span style={{ color: "#666", fontSize: 11 }}>
@@ -82,7 +105,7 @@ export function LinksPanel({ noteId }: LinksPanelProps) {
                 {links.map((l) => (
                   <li key={l.id}>
                     <Link to="/notes/$noteId" params={{ noteId: l.from_note_id }}>
-                      {l.from_note_id.slice(0, 8)}…
+                      {labelFor(l.from_note_id)}
                     </Link>
                   </li>
                 ))}
