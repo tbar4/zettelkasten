@@ -2275,10 +2275,10 @@ git commit -m "feat(api): tag endpoints (PUT note tags, list tags with counts)"
 ```ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
 export default defineConfig({
-  plugins: [TanStackRouterVite({ autoCodeSplitting: true }), react()],
+  plugins: [tanstackRouter({ autoCodeSplitting: true }), react()],
   server: {
     port: 5173,
     proxy: {
