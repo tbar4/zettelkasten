@@ -34,15 +34,14 @@ linksRoute.post("/", zValidator("json", NewNoteLinkSchema, zodErrorHook), async 
       .returning();
     return c.json(serializeLink(created!), 201);
   } catch (err) {
-    if (
-      err instanceof Error &&
-      err.message.includes("note_link_unique")
-    ) {
+    const pgErr = err as { code?: string; constraint_name?: string };
+    // 23505 = unique_violation, 23514 = check_violation (SQLSTATE)
+    if (pgErr.code === "23505" && pgErr.constraint_name === "note_link_unique") {
       throw conflict("link already exists for that pair and type");
     }
     if (
-      err instanceof Error &&
-      err.message.includes("note_link_not_self")
+      pgErr.code === "23514" &&
+      pgErr.constraint_name === "note_link_not_self"
     ) {
       throw badRequest("from and to must differ");
     }
