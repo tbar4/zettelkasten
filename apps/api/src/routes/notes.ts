@@ -6,6 +6,7 @@ import { NewNoteSchema, NoteType, UpdateNoteSchema } from "@zk/shared";
 import { db } from "../db/client";
 import { notes } from "../db/schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
+import { zodErrorHook } from "../lib/zod-error-hook";
 
 export const notesRoute = new Hono();
 
@@ -17,7 +18,7 @@ const ListQuerySchema = z.object({
     .transform((v) => v === "true")
 });
 
-notesRoute.get("/", zValidator("query", ListQuerySchema), async (c) => {
+notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c) => {
   const { type, include_archived } = c.req.valid("query");
   const where = and(
     type ? eq(notes.type, type) : undefined,
@@ -31,7 +32,7 @@ notesRoute.get("/", zValidator("query", ListQuerySchema), async (c) => {
   return c.json({ notes: rows.map(serializeNote) });
 });
 
-notesRoute.post("/", zValidator("json", NewNoteSchema), async (c) => {
+notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) => {
   const input = c.req.valid("json");
   const [created] = await db
     .insert(notes)
@@ -46,7 +47,7 @@ notesRoute.post("/", zValidator("json", NewNoteSchema), async (c) => {
 
 const idParam = z.object({ id: z.string().uuid() });
 
-notesRoute.get("/:id", zValidator("param", idParam), async (c) => {
+notesRoute.get("/:id", zValidator("param", idParam, zodErrorHook), async (c) => {
   const { id } = c.req.valid("param");
   const [row] = await db.select().from(notes).where(eq(notes.id, id));
   if (!row) throw notFound("note", id);
@@ -55,8 +56,8 @@ notesRoute.get("/:id", zValidator("param", idParam), async (c) => {
 
 notesRoute.patch(
   "/:id",
-  zValidator("param", idParam),
-  zValidator("json", UpdateNoteSchema),
+  zValidator("param", idParam, zodErrorHook),
+  zValidator("json", UpdateNoteSchema, zodErrorHook),
   async (c) => {
     const { id } = c.req.valid("param");
     const update = c.req.valid("json");
@@ -88,7 +89,7 @@ notesRoute.patch(
   }
 );
 
-notesRoute.delete("/:id", zValidator("param", idParam), async (c) => {
+notesRoute.delete("/:id", zValidator("param", idParam, zodErrorHook), async (c) => {
   const { id } = c.req.valid("param");
   const result = await db
     .update(notes)

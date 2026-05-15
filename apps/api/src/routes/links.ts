@@ -6,11 +6,12 @@ import { NewNoteLinkSchema } from "@zk/shared";
 import { db } from "../db/client";
 import { noteLinks, notes } from "../db/schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
+import { zodErrorHook } from "../lib/zod-error-hook";
 
 export const linksRoute = new Hono();
 export const noteLinksRoute = new Hono();
 
-linksRoute.post("/", zValidator("json", NewNoteLinkSchema), async (c) => {
+linksRoute.post("/", zValidator("json", NewNoteLinkSchema, zodErrorHook), async (c) => {
   const input = c.req.valid("json");
 
   const found = await db
@@ -51,7 +52,7 @@ linksRoute.post("/", zValidator("json", NewNoteLinkSchema), async (c) => {
 
 linksRoute.delete(
   "/:id",
-  zValidator("param", z.object({ id: z.string().uuid() })),
+  zValidator("param", z.object({ id: z.string().uuid() }), zodErrorHook),
   async (c) => {
     const { id } = c.req.valid("param");
     const result = await db
@@ -65,7 +66,7 @@ linksRoute.delete(
 
 noteLinksRoute.get(
   "/:id/links",
-  zValidator("param", z.object({ id: z.string().uuid() })),
+  zValidator("param", z.object({ id: z.string().uuid() }), zodErrorHook),
   async (c) => {
     const { id } = c.req.valid("param");
     const [exists] = await db

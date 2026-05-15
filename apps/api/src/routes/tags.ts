@@ -5,6 +5,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { notes, noteTags, tags } from "../db/schema";
 import { notFound } from "../lib/errors";
+import { zodErrorHook } from "../lib/zod-error-hook";
 
 const TagName = z
   .string()
@@ -30,8 +31,8 @@ tagsRoute.get("/", async (c) => {
 
 noteTagsRoute.put(
   "/:id/tags",
-  zValidator("param", z.object({ id: z.string().uuid() })),
-  zValidator("json", z.object({ tags: z.array(TagName) })),
+  zValidator("param", z.object({ id: z.string().uuid() }), zodErrorHook),
+  zValidator("json", z.object({ tags: z.array(TagName) }), zodErrorHook),
   async (c) => {
     const { id } = c.req.valid("param");
     const { tags: tagNames } = c.req.valid("json");
