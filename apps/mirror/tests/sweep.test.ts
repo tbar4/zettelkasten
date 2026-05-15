@@ -87,4 +87,26 @@ describe("runSweep", () => {
     expect(after[0]).toContain("new-title");
     expect(after[0]).not.toContain("old-title");
   });
+
+  it("does not rewrite a file when content is unchanged", async () => {
+    await db
+      .insert(schema.notes)
+      .values({ type: "permanent", title: "Stable", bodyMd: "x" })
+      .returning();
+    await runSweep(url, mirrorDir);
+    const files = (await readdir(mirrorDir)).filter((f) => f.endsWith(".md"));
+    expect(files).toHaveLength(1);
+    const fsPromises = await import("fs/promises");
+    const mtimeBefore = (
+      await fsPromises.stat(join(mirrorDir, files[0]!))
+    ).mtimeMs;
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    await runSweep(url, mirrorDir);
+    const mtimeAfter = (
+      await fsPromises.stat(join(mirrorDir, files[0]!))
+    ).mtimeMs;
+    expect(mtimeAfter).toBe(mtimeBefore);
+  });
 });

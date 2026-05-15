@@ -63,4 +63,19 @@ describe("frontmatter.serialize", () => {
     // a trailing newline are still present.
     expect(out.endsWith("---\n")).toBe(true);
   });
+
+  it("escapes control characters in quoted strings", () => {
+    const out = serialize({
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      type: "permanent",
+      title: "Line\nBreak\tTab\rCR",
+      bodyMd: "x",
+      tags: [],
+      links: [],
+      createdAt: new Date("2026-05-15T10:00:00.000Z"),
+      updatedAt: new Date("2026-05-15T10:00:00.000Z")
+    });
+    expect(out).toContain('title: "Line\\nBreak\\tTab\\rCR"');
+    expect(out).not.toMatch(/title: "[^"]*\n/);
+  });
 });
