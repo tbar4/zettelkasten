@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { healthRoute } from "./routes/health";
 import { notesRoute } from "./routes/notes";
+import { linksRoute, noteLinksRoute } from "./routes/links";
 
 export const app = new Hono();
 
@@ -12,6 +13,8 @@ app.use("/api/*", cors({ origin: "http://localhost:5173" }));
 
 app.route("/health", healthRoute);
 app.route("/api/notes", notesRoute);
+app.route("/api/notes", noteLinksRoute);
+app.route("/api/links", linksRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
