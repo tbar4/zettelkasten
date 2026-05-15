@@ -8,6 +8,7 @@ import { notes, noteTags, tags } from "../db/schema";
 import { notFound, conflict, badRequest } from "../lib/errors";
 import { zodErrorHook } from "../lib/zod-error-hook";
 import { syncWikilinks } from "../lib/wikilinks-sync";
+import { scheduleReview } from "../lib/spaced-review";
 
 export const notesRoute = new Hono();
 
@@ -75,6 +76,9 @@ notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) 
       })
       .returning();
     await syncWikilinks(tx, row!.id, row!.bodyMd);
+    if (row!.type === "permanent") {
+      await scheduleReview(tx, row!.id);
+    }
     return row!;
   });
   return c.json(serializeNote(created, []), 201);
@@ -162,6 +166,9 @@ notesRoute.patch(
         .returning();
       if (update.body_md !== undefined) {
         await syncWikilinks(tx, id, row!.bodyMd);
+      }
+      if (update.type === "permanent" && existing.type !== "permanent") {
+        await scheduleReview(tx, id);
       }
       return row!;
     });
