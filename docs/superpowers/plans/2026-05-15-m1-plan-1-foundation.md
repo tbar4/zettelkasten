@@ -374,12 +374,15 @@ git commit -m "chore: docker compose with postgres+pgvector and redis"
 
 - [ ] **Step 2: Create `packages/shared/tsconfig.json`**
 
+`lib` is overridden to drop DOM/DOM.Iterable from the base — this package is consumed by Node (API) and the browser (web), but the schemas themselves are environment-agnostic and shouldn't pull DOM types in.
+
 ```json
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
+    "lib": ["ES2022"],
     "composite": true
   },
   "include": ["src/**/*"]
@@ -718,6 +721,8 @@ git commit -m "feat(shared): zod schemas for note, link, tag"
 
 - [ ] **Step 2: Create `apps/api/tsconfig.json`**
 
+`lib` is overridden to drop DOM types — this is Node-only code; importing browser globals like `window` or `document` should be a type error.
+
 ```json
 {
   "extends": "../../tsconfig.base.json",
@@ -726,6 +731,7 @@ git commit -m "feat(shared): zod schemas for note, link, tag"
     "outDir": "dist",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
     "noEmit": false
   },
   "include": ["src/**/*", "tests/**/*"],
