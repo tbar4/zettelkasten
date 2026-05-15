@@ -3,7 +3,10 @@ import { extractWikilinks } from "@zk/shared";
 import type { db as DB } from "../db/client";
 import { notes, noteLinks } from "../db/schema";
 
-type DrizzleDB = typeof DB;
+// Accept either the top-level db instance or a transaction handle (which lacks
+// `$client` but shares all query-builder methods). Using a structural pick of
+// the methods syncWikilinks actually calls lets both pass the type check.
+type DrizzleDB = Pick<typeof DB, "select" | "insert" | "delete" | "transaction">;
 
 export async function syncWikilinks(
   db: DrizzleDB,
@@ -59,14 +62,19 @@ export async function syncWikilinks(
       await tx.delete(noteLinks).where(inArray(noteLinks.id, toDeleteIds));
     }
     if (toInsert.length > 0) {
-      await tx.insert(noteLinks).values(
-        toInsert.map((toNoteId) => ({
-          fromNoteId,
-          toNoteId,
-          linkType: "references" as const,
-          source: "wikilink" as const
-        }))
-      );
+      await tx
+        .insert(noteLinks)
+        .values(
+          toInsert.map((toNoteId) => ({
+            fromNoteId,
+            toNoteId,
+            linkType: "references" as const,
+            source: "wikilink" as const
+          }))
+        )
+        .onConflictDoNothing({
+          target: [noteLinks.fromNoteId, noteLinks.toNoteId, noteLinks.linkType]
+        });
     }
   });
 }

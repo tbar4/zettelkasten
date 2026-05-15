@@ -122,4 +122,27 @@ describe("syncWikilinks", () => {
       .where(eq(schema.noteLinks.fromNoteId, a));
     expect(links).toEqual([]);
   });
+
+  it("does not 500 when a manual link already exists at the same (from,to,type)", async () => {
+    const a = await createNote("A");
+    const b = await createNote("B");
+    // Pre-existing manual references link
+    await db.insert(schema.noteLinks).values({
+      fromNoteId: a,
+      toNoteId: b,
+      linkType: "references",
+      source: "manual"
+    });
+
+    // syncWikilinks must not throw on the duplicate; the manual row remains untouched.
+    await expect(syncWikilinks(db, a, "[[B]]")).resolves.toBeUndefined();
+
+    const links = await db
+      .select()
+      .from(schema.noteLinks)
+      .where(eq(schema.noteLinks.fromNoteId, a));
+    // Manual row wins; no second row inserted.
+    expect(links).toHaveLength(1);
+    expect(links[0]!.source).toBe("manual");
+  });
 });

@@ -36,16 +36,19 @@ notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c
 
 notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) => {
   const input = c.req.valid("json");
-  const [created] = await db
-    .insert(notes)
-    .values({
-      type: input.type,
-      title: input.title,
-      bodyMd: input.body_md ?? null
-    })
-    .returning();
-  await syncWikilinks(db, created!.id, created!.bodyMd);
-  return c.json(serializeNote(created!, []), 201);
+  const created = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(notes)
+      .values({
+        type: input.type,
+        title: input.title,
+        bodyMd: input.body_md ?? null
+      })
+      .returning();
+    await syncWikilinks(tx, row!.id, row!.bodyMd);
+    return row!;
+  });
+  return c.json(serializeNote(created, []), 201);
 });
 
 const SearchQuerySchema = z.object({ q: z.string().min(1) });
@@ -101,22 +104,23 @@ notesRoute.patch(
       );
     }
 
-    const [updated] = await db
-      .update(notes)
-      .set({
-        ...(update.title !== undefined ? { title: update.title } : {}),
-        ...(update.type !== undefined ? { type: update.type } : {}),
-        ...(update.body_md !== undefined ? { bodyMd: update.body_md } : {}),
-        updatedAt: new Date()
-      })
-      .where(eq(notes.id, id))
-      .returning();
-
-    // Re-sync wikilinks from the updated body.
-    await syncWikilinks(db, id, updated!.bodyMd);
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(notes)
+        .set({
+          ...(update.title !== undefined ? { title: update.title } : {}),
+          ...(update.type !== undefined ? { type: update.type } : {}),
+          ...(update.body_md !== undefined ? { bodyMd: update.body_md } : {}),
+          updatedAt: new Date()
+        })
+        .where(eq(notes.id, id))
+        .returning();
+      await syncWikilinks(tx, id, row!.bodyMd);
+      return row!;
+    });
 
     const tagsByNote = await fetchTagsFor([id]);
-    return c.json(serializeNote(updated!, tagsByNote.get(id) ?? []));
+    return c.json(serializeNote(updated, tagsByNote.get(id) ?? []));
   }
 );
 
