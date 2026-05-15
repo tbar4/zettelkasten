@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { extractWikilinks } from "@zk/shared";
 import type { db as DB } from "../db/client";
 import { notes, noteLinks } from "../db/schema";
@@ -17,25 +17,31 @@ export async function syncWikilinks(
   const wikilinks = bodyMd ? extractWikilinks(bodyMd) : [];
   const distinctTitles = Array.from(new Set(wikilinks.map((w) => w.title)));
 
-  // Step 2: resolve titles → note IDs (first match wins for ambiguous titles).
+  // Step 2: resolve titles → note IDs (newest match wins for ambiguous titles).
+  const lowerTitles = distinctTitles.map((t) => t.toLowerCase());
   const matches =
-    distinctTitles.length === 0
+    lowerTitles.length === 0
       ? []
       : await db
           .select({ id: notes.id, title: notes.title })
           .from(notes)
           .where(
-            and(inArray(notes.title, distinctTitles), isNull(notes.archivedAt))
-          );
+            and(
+              inArray(sql<string>`lower(${notes.title})`, lowerTitles),
+              isNull(notes.archivedAt)
+            )
+          )
+          .orderBy(desc(notes.createdAt));
 
   const titleToId = new Map<string, string>();
   for (const m of matches) {
-    if (!titleToId.has(m.title)) titleToId.set(m.title, m.id);
+    const key = m.title.toLowerCase();
+    if (!titleToId.has(key)) titleToId.set(key, m.id);
   }
 
   const desiredTargets = new Set<string>();
   for (const title of distinctTitles) {
-    const id = titleToId.get(title);
+    const id = titleToId.get(title.toLowerCase());
     if (id && id !== fromNoteId) desiredTargets.add(id);
   }
 

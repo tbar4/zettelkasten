@@ -145,4 +145,45 @@ describe("syncWikilinks", () => {
     expect(links).toHaveLength(1);
     expect(links[0]!.source).toBe("manual");
   });
+
+  it("resolves wikilinks case-insensitively", async () => {
+    const a = await createNote("A");
+    const target = await db
+      .insert(schema.notes)
+      .values({ type: "permanent", title: "Foucault" })
+      .returning({ id: schema.notes.id });
+    const targetId = target[0]!.id;
+
+    await syncWikilinks(db, a, "see [[foucault]]");
+
+    const links = await db
+      .select()
+      .from(schema.noteLinks)
+      .where(eq(schema.noteLinks.fromNoteId, a));
+    expect(links).toHaveLength(1);
+    expect(links[0]!.toNoteId).toBe(targetId);
+  });
+
+  it("picks the newest match deterministically on ambiguous titles", async () => {
+    const a = await createNote("A");
+    await db
+      .insert(schema.notes)
+      .values({ type: "permanent", title: "Dup" })
+      .returning({ id: schema.notes.id });
+    // Force the second insert to have a strictly later createdAt.
+    await new Promise((r) => setTimeout(r, 5));
+    const newer = await db
+      .insert(schema.notes)
+      .values({ type: "permanent", title: "Dup" })
+      .returning({ id: schema.notes.id });
+
+    await syncWikilinks(db, a, "[[Dup]]");
+
+    const links = await db
+      .select()
+      .from(schema.noteLinks)
+      .where(eq(schema.noteLinks.fromNoteId, a));
+    expect(links).toHaveLength(1);
+    expect(links[0]!.toNoteId).toBe(newer[0]!.id);
+  });
 });
