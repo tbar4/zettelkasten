@@ -94,6 +94,28 @@ describe("GET /api/notes", () => {
     expect(res.status).toBe(200);
   });
 
+  it("filters by ids when ?ids= is provided", async () => {
+    const a = (await (
+      await post("/api/notes", { title: "A", type: "permanent" })
+    ).json()) as { id: string };
+    const b = (await (
+      await post("/api/notes", { title: "B", type: "permanent" })
+    ).json()) as { id: string };
+    await post("/api/notes", { title: "C", type: "permanent" });
+
+    const res = await app.request(`/api/notes?ids=${a.id},${b.id}`);
+    const body = (await res.json()) as { notes: { id: string }[] };
+    const ids = body.notes.map((n) => n.id).sort();
+    expect(ids).toEqual([a.id, b.id].sort());
+  });
+
+  it("returns empty array when ?ids= is empty", async () => {
+    await post("/api/notes", { title: "X", type: "fleeting" });
+    const res = await app.request("/api/notes?ids=");
+    const body = (await res.json()) as { notes: unknown[] };
+    expect(body.notes).toEqual([]);
+  });
+
   it("includes tags on each note in list", async () => {
     const created = (await (
       await post("/api/notes", { title: "A", type: "permanent" })
@@ -303,9 +325,14 @@ describe("GET /api/notes/search", () => {
     expect(body.notes).toEqual([]);
   });
 
-  it("returns 400 on missing q", async () => {
-    const res = await app.request("/api/notes/search");
-    expect(res.status).toBe(400);
+  it("returns recent notes when q is empty", async () => {
+    await post("/api/notes", { title: "Old", type: "fleeting" });
+    await new Promise((r) => setTimeout(r, 5));
+    await post("/api/notes", { title: "New", type: "fleeting" });
+    const res = await app.request("/api/notes/search?q=");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { notes: { title: string }[] };
+    expect(body.notes.map((n) => n.title)).toEqual(["New", "Old"]);
   });
 
   it("excludes archived notes", async () => {
@@ -326,6 +353,44 @@ describe("GET /api/notes/search", () => {
     const res = await app.request("/api/notes/search?q=note");
     const body = (await res.json()) as { notes: unknown[] };
     expect(body.notes).toHaveLength(10);
+  });
+
+  it("ranks title matches above body matches", async () => {
+    await post("/api/notes", {
+      title: "Foucault",
+      type: "literature",
+      body_md: "x"
+    });
+    await post("/api/notes", {
+      title: "Other",
+      type: "permanent",
+      body_md: "Foucault appears in body only"
+    });
+    const res = await app.request("/api/notes/search?q=Foucault");
+    const body = (await res.json()) as {
+      notes: { title: string }[];
+    };
+    expect(body.notes[0]!.title).toBe("Foucault");
+    expect(body.notes[1]!.title).toBe("Other");
+  });
+
+  it("handles percent and underscore as literals (no LIKE-pattern injection)", async () => {
+    await post("/api/notes", { title: "100%", type: "fleeting" });
+    await post("/api/notes", { title: "snake_case", type: "fleeting" });
+    await post("/api/notes", { title: "unrelated", type: "fleeting" });
+
+    const pct = await app.request("/api/notes/search?q=100%25");
+    // %25 is "%" url-encoded; the search should treat the % as text, not a wildcard.
+    const pctBody = (await pct.json()) as { notes: { title: string }[] };
+    expect(pctBody.notes.map((n) => n.title)).toContain("100%");
+    expect(pctBody.notes.find((n) => n.title === "unrelated")).toBeUndefined();
+  });
+
+  it("is case-insensitive", async () => {
+    await post("/api/notes", { title: "MixedCase", type: "fleeting" });
+    const res = await app.request("/api/notes/search?q=mixedcase");
+    const body = (await res.json()) as { notes: { title: string }[] };
+    expect(body.notes.map((n) => n.title)).toContain("MixedCase");
   });
 });
 
@@ -375,6 +440,38 @@ describe("wikilink sync on note write", () => {
       await app.request(`/api/notes/${src.id}/links`)
     ).json()) as { outgoing: unknown[] };
     expect(links.outgoing).toEqual([]);
+  });
+
+  it("does not re-run wikilink sync when only title changes", async () => {
+    await post("/api/notes", { title: "T", type: "permanent" });
+    const src = (await (
+      await post("/api/notes", {
+        title: "S",
+        type: "permanent",
+        body_md: "[[T]]"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    const before = (await (
+      await app.request(`/api/notes/${src.id}/links`)
+    ).json()) as { outgoing: { id: string }[] };
+    const linkIdBefore = before.outgoing[0]!.id;
+
+    // PATCH only the title.
+    await app.request(`/api/notes/${src.id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "if-match": src.updated_at
+      },
+      body: JSON.stringify({ title: "S renamed" })
+    });
+
+    const after = (await (
+      await app.request(`/api/notes/${src.id}/links`)
+    ).json()) as { outgoing: { id: string }[] };
+    // Same link id ⇒ no delete+reinsert happened.
+    expect(after.outgoing[0]!.id).toBe(linkIdBefore);
   });
 
   it("manual links survive a wikilink-less PATCH", async () => {

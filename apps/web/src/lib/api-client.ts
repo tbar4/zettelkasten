@@ -27,6 +27,14 @@ export const api = {
     return request(`/api/notes${qs ? `?${qs}` : ""}`, { method: "GET" });
   },
 
+  listNotesByIds(ids: string[]): Promise<{ notes: Note[] }> {
+    if (ids.length === 0) return Promise.resolve({ notes: [] });
+    return request(
+      `/api/notes?ids=${ids.map(encodeURIComponent).join(",")}`,
+      { method: "GET" }
+    );
+  },
+
   getNote(id: string): Promise<Note> {
     return request(`/api/notes/${id}`, { method: "GET" });
   },
@@ -67,5 +75,25 @@ export const api = {
     id: string
   ): Promise<{ outgoing: NoteLink[]; incoming: NoteLink[] }> {
     return request(`/api/notes/${id}/links`, { method: "GET" });
+  },
+
+  setNoteTags(noteId: string, tagNames: string[]): Promise<{ tags: string[] }> {
+    return request(`/api/notes/${noteId}/tags`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tags: tagNames })
+    });
+  },
+
+  suggestTags(q: string): Promise<{ tags: { name: string; count: number }[] }> {
+    const qs = new URLSearchParams({ q }).toString();
+    return request(`/api/tags/suggest?${qs}`, { method: "GET" });
+  },
+
+  getGraph(): Promise<{
+    nodes: { id: string; title: string; type: string }[];
+    edges: { id: string; source: string; target: string; link_type: string }[];
+  }> {
+    return request("/api/graph", { method: "GET" });
   }
 };

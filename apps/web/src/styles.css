@@ -107,3 +107,121 @@ ul {
   font-size: 11px;
   color: #aaa;
 }
+
+.tag-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tag-editor .tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tag-editor .tag-chip-remove {
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: #888;
+  padding: 0 0 0 2px;
+  font-size: 12px;
+}
+
+.tag-editor-input {
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 2px 4px;
+  font-size: 12px;
+  min-width: 80px;
+  color: inherit;
+}
+
+.tag-editor-suggest {
+  position: absolute;
+  margin-top: 2px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
+  min-width: 140px;
+}
+
+.tag-editor-suggest button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 4px 8px;
+  color: inherit;
+}
+
+.tag-editor-suggest button:hover {
+  background: #222;
+}
+
+.cmdp-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  z-index: 100;
+}
+
+.cmdp {
+  width: 560px;
+  max-width: 90vw;
+  background: #161616;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cmdp input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 14px 16px;
+  font-size: 15px;
+  color: inherit;
+  border-bottom: 1px solid #222;
+}
+
+.cmdp-result {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.cmdp-result-active {
+  background: #222;
+}
+
+.cmdp-result-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #888;
+}
+
+.cmdp-empty {
+  padding: 14px 16px;
+  color: #666;
+  font-size: 13px;
+}

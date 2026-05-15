@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { and, desc, eq, ilike, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { NewNoteSchema, NoteType, UpdateNoteSchema } from "@zk/shared";
 import { db } from "../db/client";
 import { notes, noteTags, tags } from "../db/schema";
@@ -13,6 +13,7 @@ export const notesRoute = new Hono();
 
 const ListQuerySchema = z.object({
   type: NoteType.optional(),
+  ids: z.string().optional(),
   include_archived: z
     .enum(["true", "false"])
     .default("false")
@@ -20,7 +21,23 @@ const ListQuerySchema = z.object({
 });
 
 notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c) => {
-  const { type, include_archived } = c.req.valid("query");
+  const { type, ids, include_archived } = c.req.valid("query");
+  if (ids !== undefined) {
+    const idList = ids
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    if (idList.length === 0) return c.json({ notes: [] });
+    const rows = await db
+      .select()
+      .from(notes)
+      .where(inArray(notes.id, idList))
+      .orderBy(desc(notes.createdAt));
+    const tagsByNote = await fetchTagsFor(rows.map((r) => r.id));
+    return c.json({
+      notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? []))
+    });
+  }
   const where = and(
     type ? eq(notes.type, type) : undefined,
     include_archived ? undefined : isNull(notes.archivedAt)
@@ -31,7 +48,9 @@ notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c
     .where(where)
     .orderBy(desc(notes.createdAt));
   const tagsByNote = await fetchTagsFor(rows.map((r) => r.id));
-  return c.json({ notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? [])) });
+  return c.json({
+    notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? []))
+  });
 });
 
 notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) => {
@@ -51,21 +70,37 @@ notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) 
   return c.json(serializeNote(created, []), 201);
 });
 
-const SearchQuerySchema = z.object({ q: z.string().min(1) });
+const SearchQuerySchema = z.object({ q: z.string().default("") });
 
 notesRoute.get("/search", zValidator("query", SearchQuerySchema, zodErrorHook), async (c) => {
   const { q } = c.req.valid("query");
+  const trimmed = q.trim();
+
+  if (trimmed.length === 0) {
+    const rows = await db
+      .select({ id: notes.id, title: notes.title, type: notes.type })
+      .from(notes)
+      .where(isNull(notes.archivedAt))
+      .orderBy(desc(notes.updatedAt))
+      .limit(10);
+    return c.json({ notes: rows });
+  }
+
+  const tsQuery = sql`websearch_to_tsquery('english', ${trimmed})`;
   const rows = await db
     .select({
       id: notes.id,
       title: notes.title,
-      type: notes.type
+      type: notes.type,
+      rank: sql<number>`ts_rank(${notes.tsv}, ${tsQuery})`.as("rank")
     })
     .from(notes)
-    .where(and(ilike(notes.title, `%${q}%`), isNull(notes.archivedAt)))
-    .orderBy(desc(notes.updatedAt))
+    .where(
+      and(sql`${notes.tsv} @@ ${tsQuery}`, isNull(notes.archivedAt))
+    )
+    .orderBy(sql`rank DESC`, desc(notes.updatedAt))
     .limit(10);
-  return c.json({ notes: rows });
+  return c.json({ notes: rows.map(({ rank, ...rest }) => rest) });
 });
 
 const idParam = z.object({ id: z.string().uuid() });
@@ -115,7 +150,9 @@ notesRoute.patch(
         })
         .where(eq(notes.id, id))
         .returning();
-      await syncWikilinks(tx, id, row!.bodyMd);
+      if (update.body_md !== undefined) {
+        await syncWikilinks(tx, id, row!.bodyMd);
+      }
       return row!;
     });
 

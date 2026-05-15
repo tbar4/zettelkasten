@@ -1,4 +1,5 @@
 import type { Note } from "@zk/shared";
+import { TagEditor } from "./TagEditor";
 
 interface NoteTopBarProps {
   note: Note;
@@ -10,11 +11,7 @@ export function NoteTopBar({ note, onBack }: NoteTopBarProps) {
     <div className="note-top-bar">
       <button onClick={onBack}>← Back</button>
       <span className="note-type-chip">{note.type}</span>
-      {note.tags.map((t) => (
-        <span key={t} className="tag-chip">
-          {t}
-        </span>
-      ))}
+      <TagEditor noteId={note.id} tags={note.tags} />
       <span style={{ marginLeft: "auto", color: "#888" }}>
         updated {new Date(note.updated_at).toLocaleString()}
       </span>

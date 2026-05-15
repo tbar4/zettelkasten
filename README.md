@@ -6,7 +6,7 @@ See [`docs/superpowers/specs/2026-05-15-zettelkasten-app-design.md`](docs/superp
 
 ## Current status
 
-M1 Plan 1 (Foundation) and Plan 2 (Editor + Wikilinks) complete. The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a right-rail backlinks panel, and a top bar showing type/tags/last-edited. Wikilinks auto-sync into the `note_link` table on save.
+M1 Plans 1–3 complete. The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a right-rail backlinks panel with note titles, inline tag editing in the top bar, a ⌘K command palette over Postgres FTS, and a Sigma.js graph view at `/graph` with type filters. Wikilinks auto-sync into the `note_link` table on save and are resolved case-insensitively.
 
 ## Setup
 
