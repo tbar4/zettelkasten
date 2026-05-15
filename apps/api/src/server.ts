@@ -5,6 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import { healthRoute } from "./routes/health";
 import { notesRoute } from "./routes/notes";
 import { linksRoute, noteLinksRoute } from "./routes/links";
+import { tagsRoute, noteTagsRoute } from "./routes/tags";
 
 export const app = new Hono();
 
@@ -15,6 +16,8 @@ app.route("/health", healthRoute);
 app.route("/api/notes", notesRoute);
 app.route("/api/notes", noteLinksRoute);
 app.route("/api/links", linksRoute);
+app.route("/api/tags", tagsRoute);
+app.route("/api/notes", noteTagsRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
