@@ -10,7 +10,7 @@
     "dev:api": "pnpm --filter @zk/api dev",
     "dev:web": "pnpm --filter @zk/web dev",
     "dev:mirror": "pnpm --filter @zk/mirror dev",
-    "test": "pnpm -r test",
+    "test": "pnpm -r --workspace-concurrency=1 test",
     "build": "pnpm -r build",
     "db:up": "docker compose up -d postgres redis",
     "db:down": "docker compose down",
