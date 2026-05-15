@@ -43,7 +43,7 @@ describe("syncWikilinks", () => {
 
   it("removes wikilink rows when the wikilink is deleted from body", async () => {
     const a = await createNote("A");
-    const b = await createNote("B");
+    await createNote("B");
     await syncWikilinks(db, a, "See [[B]]");
     expect(
       (await db.select().from(schema.noteLinks).where(eq(schema.noteLinks.fromNoteId, a)))
@@ -102,7 +102,7 @@ describe("syncWikilinks", () => {
 
   it("deduplicates repeated wikilinks to the same target", async () => {
     const a = await createNote("A");
-    const b = await createNote("B");
+    await createNote("B");
     await syncWikilinks(db, a, "[[B]] [[B]] [[B]]");
     const links = await db
       .select()
@@ -113,7 +113,7 @@ describe("syncWikilinks", () => {
 
   it("handles null body_md as 'no wikilinks'", async () => {
     const a = await createNote("A");
-    const b = await createNote("B");
+    await createNote("B");
     await syncWikilinks(db, a, "[[B]]");
     await syncWikilinks(db, a, null);
     const links = await db

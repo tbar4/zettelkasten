@@ -83,11 +83,13 @@ describe("NoteSchema", () => {
       type: "permanent",
       title: "Idea",
       body_md: "Body",
+      tags: ["focus"],
       created_at: "2026-05-15T10:00:00.000Z",
       updated_at: "2026-05-15T10:00:00.000Z",
       archived_at: null,
       notion_page_id: null
     });
     expect(note.type).toBe("permanent");
+    expect(note.tags).toEqual(["focus"]);
   });
 });
