@@ -15,7 +15,13 @@ inboxRoute.get("/", async (c) => {
     })
     .from(spacedReview)
     .innerJoin(notes, eq(notes.id, spacedReview.noteId))
-    .where(and(lte(spacedReview.nextDueAt, sql`now()`), isNull(notes.archivedAt)))
+    .where(
+      and(
+        lte(spacedReview.nextDueAt, sql`now()`),
+        isNull(notes.archivedAt),
+        eq(notes.type, "permanent")
+      )
+    )
     .orderBy(asc(spacedReview.nextDueAt))
     .limit(20);
 

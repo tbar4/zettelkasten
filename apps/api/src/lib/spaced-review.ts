@@ -64,12 +64,14 @@ export async function applyArchive(
   db: any,
   noteId: string
 ): Promise<boolean> {
-  const archived = await db
-    .update(notes)
-    .set({ archivedAt: new Date() })
-    .where(eq(notes.id, noteId))
-    .returning({ id: notes.id });
-  if (archived.length === 0) return false;
-  await db.delete(spacedReview).where(eq(spacedReview.noteId, noteId));
-  return true;
+  return await db.transaction(async (tx: typeof db) => {
+    const archived = await tx
+      .update(notes)
+      .set({ archivedAt: new Date() })
+      .where(eq(notes.id, noteId))
+      .returning({ id: notes.id });
+    if (archived.length === 0) return false;
+    await tx.delete(spacedReview).where(eq(spacedReview.noteId, noteId));
+    return true;
+  });
 }
