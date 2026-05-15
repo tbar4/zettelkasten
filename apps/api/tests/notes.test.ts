@@ -248,3 +248,52 @@ describe("DELETE /api/notes/:id", () => {
     expect((withArchived as { notes: unknown[] }).notes).toHaveLength(1);
   });
 });
+
+describe("GET /api/notes/search", () => {
+  it("returns matching notes by title (case-insensitive)", async () => {
+    await post("/api/notes", { title: "Foucault: Discipline", type: "literature" });
+    await post("/api/notes", { title: "Foucault: Power", type: "literature" });
+    await post("/api/notes", { title: "Other thing", type: "permanent" });
+
+    const res = await app.request("/api/notes/search?q=foucault");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      notes: { id: string; title: string; type: string }[];
+    };
+    expect(body.notes).toHaveLength(2);
+    expect(body.notes.every((n) => n.title.includes("Foucault"))).toBe(true);
+  });
+
+  it("returns empty array when nothing matches", async () => {
+    await post("/api/notes", { title: "Hello", type: "permanent" });
+    const res = await app.request("/api/notes/search?q=zzzzz");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { notes: unknown[] };
+    expect(body.notes).toEqual([]);
+  });
+
+  it("returns 400 on missing q", async () => {
+    const res = await app.request("/api/notes/search");
+    expect(res.status).toBe(400);
+  });
+
+  it("excludes archived notes", async () => {
+    const created = (await (
+      await post("/api/notes", { title: "Visible", type: "permanent" })
+    ).json()) as { id: string };
+    await app.request(`/api/notes/${created.id}`, { method: "DELETE" });
+
+    const res = await app.request("/api/notes/search?q=visible");
+    const body = (await res.json()) as { notes: unknown[] };
+    expect(body.notes).toEqual([]);
+  });
+
+  it("limits results to 10", async () => {
+    for (let i = 0; i < 15; i++) {
+      await post("/api/notes", { title: `Note ${i}`, type: "fleeting" });
+    }
+    const res = await app.request("/api/notes/search?q=note");
+    const body = (await res.json()) as { notes: unknown[] };
+    expect(body.notes).toHaveLength(10);
+  });
+});

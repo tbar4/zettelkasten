@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull } from "drizzle-orm";
 import { NewNoteSchema, NoteType, UpdateNoteSchema } from "@zk/shared";
 import { db } from "../db/client";
 import { notes } from "../db/schema";
@@ -43,6 +43,23 @@ notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) 
     })
     .returning();
   return c.json(serializeNote(created!), 201);
+});
+
+const SearchQuerySchema = z.object({ q: z.string().min(1) });
+
+notesRoute.get("/search", zValidator("query", SearchQuerySchema, zodErrorHook), async (c) => {
+  const { q } = c.req.valid("query");
+  const rows = await db
+    .select({
+      id: notes.id,
+      title: notes.title,
+      type: notes.type
+    })
+    .from(notes)
+    .where(and(ilike(notes.title, `%${q}%`), isNull(notes.archivedAt)))
+    .orderBy(desc(notes.updatedAt))
+    .limit(10);
+  return c.json({ notes: rows });
 });
 
 const idParam = z.object({ id: z.string().uuid() });
