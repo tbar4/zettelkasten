@@ -65,6 +65,7 @@ export function TagEditor({ noteId, tags }: TagEditorProps) {
             className="tag-chip-remove"
             onClick={() => removeTag(t)}
             aria-label={`Remove tag ${t}`}
+            disabled={setTagsMutation.isPending}
           >
             ×
           </button>
