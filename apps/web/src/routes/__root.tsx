@@ -12,6 +12,9 @@ function Root() {
             Zettelkasten
           </Link>
         </h1>
+        <Link to="/inbox" style={{ fontSize: 14, color: "#7aa2f7" }}>
+          Inbox
+        </Link>
         <Link to="/graph" style={{ fontSize: 14, color: "#7aa2f7" }}>
           Graph
         </Link>
