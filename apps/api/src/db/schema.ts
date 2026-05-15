@@ -29,6 +29,8 @@ export const linkTypeEnum = pgEnum("link_type", [
   "derived_from"
 ]);
 
+export const linkSourceEnum = pgEnum("link_source", ["wikilink", "manual"]);
+
 export const notes = pgTable(
   "note",
   {
@@ -69,6 +71,7 @@ export const noteLinks = pgTable(
       .references(() => notes.id, { onDelete: "cascade" }),
     linkType: linkTypeEnum("link_type").notNull().default("references"),
     context: text("context"),
+    source: linkSourceEnum("source").notNull().default("manual"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull()

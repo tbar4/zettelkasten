@@ -12,6 +12,9 @@ export const LinkType = z.enum([
 ]);
 export type LinkType = z.infer<typeof LinkType>;
 
+export const LinkSource = z.enum(["wikilink", "manual"]);
+export type LinkSource = z.infer<typeof LinkSource>;
+
 export const NewNoteLinkSchema = z
   .object({
     from_note_id: z.string().uuid(),
@@ -31,6 +34,7 @@ export const NoteLinkSchema = z.object({
   to_note_id: z.string().uuid(),
   link_type: LinkType,
   context: z.string().nullable(),
+  source: LinkSource,
   created_at: z.string().datetime()
 });
 export type NoteLink = z.infer<typeof NoteLinkSchema>;

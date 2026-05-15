@@ -29,7 +29,8 @@ linksRoute.post("/", zValidator("json", NewNoteLinkSchema, zodErrorHook), async 
         fromNoteId: input.from_note_id,
         toNoteId: input.to_note_id,
         linkType: input.link_type,
-        context: input.context ?? null
+        context: input.context ?? null,
+        source: "manual"
       })
       .returning();
     return c.json(serializeLink(created!), 201);
@@ -99,6 +100,7 @@ function serializeLink(row: typeof noteLinks.$inferSelect) {
     to_note_id: row.toNoteId,
     link_type: row.linkType,
     context: row.context,
+    source: row.source,
     created_at: row.createdAt.toISOString()
   };
 }
