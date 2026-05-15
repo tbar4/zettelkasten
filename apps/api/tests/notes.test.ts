@@ -94,6 +94,28 @@ describe("GET /api/notes", () => {
     expect(res.status).toBe(200);
   });
 
+  it("filters by ids when ?ids= is provided", async () => {
+    const a = (await (
+      await post("/api/notes", { title: "A", type: "permanent" })
+    ).json()) as { id: string };
+    const b = (await (
+      await post("/api/notes", { title: "B", type: "permanent" })
+    ).json()) as { id: string };
+    await post("/api/notes", { title: "C", type: "permanent" });
+
+    const res = await app.request(`/api/notes?ids=${a.id},${b.id}`);
+    const body = (await res.json()) as { notes: { id: string }[] };
+    const ids = body.notes.map((n) => n.id).sort();
+    expect(ids).toEqual([a.id, b.id].sort());
+  });
+
+  it("returns empty array when ?ids= is empty", async () => {
+    await post("/api/notes", { title: "X", type: "fleeting" });
+    const res = await app.request("/api/notes?ids=");
+    const body = (await res.json()) as { notes: unknown[] };
+    expect(body.notes).toEqual([]);
+  });
+
   it("includes tags on each note in list", async () => {
     const created = (await (
       await post("/api/notes", { title: "A", type: "permanent" })

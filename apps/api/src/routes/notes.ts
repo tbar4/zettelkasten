@@ -13,6 +13,7 @@ export const notesRoute = new Hono();
 
 const ListQuerySchema = z.object({
   type: NoteType.optional(),
+  ids: z.string().optional(),
   include_archived: z
     .enum(["true", "false"])
     .default("false")
@@ -20,7 +21,23 @@ const ListQuerySchema = z.object({
 });
 
 notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c) => {
-  const { type, include_archived } = c.req.valid("query");
+  const { type, ids, include_archived } = c.req.valid("query");
+  if (ids !== undefined) {
+    const idList = ids
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    if (idList.length === 0) return c.json({ notes: [] });
+    const rows = await db
+      .select()
+      .from(notes)
+      .where(inArray(notes.id, idList))
+      .orderBy(desc(notes.createdAt));
+    const tagsByNote = await fetchTagsFor(rows.map((r) => r.id));
+    return c.json({
+      notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? []))
+    });
+  }
   const where = and(
     type ? eq(notes.type, type) : undefined,
     include_archived ? undefined : isNull(notes.archivedAt)
@@ -31,7 +48,9 @@ notesRoute.get("/", zValidator("query", ListQuerySchema, zodErrorHook), async (c
     .where(where)
     .orderBy(desc(notes.createdAt));
   const tagsByNote = await fetchTagsFor(rows.map((r) => r.id));
-  return c.json({ notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? [])) });
+  return c.json({
+    notes: rows.map((r) => serializeNote(r, tagsByNote.get(r.id) ?? []))
+  });
 });
 
 notesRoute.post("/", zValidator("json", NewNoteSchema, zodErrorHook), async (c) => {

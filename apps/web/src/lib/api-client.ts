@@ -27,6 +27,14 @@ export const api = {
     return request(`/api/notes${qs ? `?${qs}` : ""}`, { method: "GET" });
   },
 
+  listNotesByIds(ids: string[]): Promise<{ notes: Note[] }> {
+    if (ids.length === 0) return Promise.resolve({ notes: [] });
+    return request(
+      `/api/notes?ids=${ids.map(encodeURIComponent).join(",")}`,
+      { method: "GET" }
+    );
+  },
+
   getNote(id: string): Promise<Note> {
     return request(`/api/notes/${id}`, { method: "GET" });
   },
