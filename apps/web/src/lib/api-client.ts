@@ -88,5 +88,12 @@ export const api = {
   suggestTags(q: string): Promise<{ tags: { name: string; count: number }[] }> {
     const qs = new URLSearchParams({ q }).toString();
     return request(`/api/tags/suggest?${qs}`, { method: "GET" });
+  },
+
+  getGraph(): Promise<{
+    nodes: { id: string; title: string; type: string }[];
+    edges: { id: string; source: string; target: string; link_type: string }[];
+  }> {
+    return request("/api/graph", { method: "GET" });
   }
 };
