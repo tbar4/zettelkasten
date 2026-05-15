@@ -11,11 +11,11 @@ export type NoteType = z.infer<typeof NoteType>;
 const NoteBase = z.object({
   title: z.string().min(1),
   type: NoteType,
-  body_md: z.string().optional()
+  body_md: z.string().nullable().optional()
 });
 
 export const NewNoteSchema = NoteBase.superRefine((data, ctx) => {
-  if (data.type === "topic" && data.body_md !== undefined) {
+  if (data.type === "topic" && data.body_md !== undefined && data.body_md !== null) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "topic notes must not have body_md",
@@ -26,7 +26,7 @@ export const NewNoteSchema = NoteBase.superRefine((data, ctx) => {
 export type NewNote = z.infer<typeof NewNoteSchema>;
 
 export const UpdateNoteSchema = NoteBase.partial().superRefine((data, ctx) => {
-  if (data.type === "topic" && data.body_md !== undefined) {
+  if (data.type === "topic" && data.body_md !== undefined && data.body_md !== null) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "topic notes must not have body_md",

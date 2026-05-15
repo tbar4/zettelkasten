@@ -70,8 +70,14 @@ notesRoute.patch(
       throw conflict("note has been modified by another writer");
     }
 
-    if (existing.type === "topic" && update.body_md !== undefined) {
-      throw badRequest("topic notes cannot have body_md");
+    // Compute effective post-update state and reject any (type=topic, body_md non-null) combination.
+    const effectiveType = update.type ?? existing.type;
+    const effectiveBodyMd =
+      update.body_md !== undefined ? update.body_md : existing.bodyMd;
+    if (effectiveType === "topic" && effectiveBodyMd !== null) {
+      throw badRequest(
+        "topic notes cannot have body_md; send body_md: null when converting"
+      );
     }
 
     const [updated] = await db

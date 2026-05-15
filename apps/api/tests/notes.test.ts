@@ -187,6 +187,45 @@ describe("PATCH /api/notes/:id", () => {
     );
     expect(res.status).toBe(400);
   });
+
+  it("rejects type permanent → topic with existing body (no body clear)", async () => {
+    const created = (await (
+      await post("/api/notes", {
+        title: "P",
+        type: "permanent",
+        body_md: "stays around"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    const res = await patch(
+      `/api/notes/${created.id}`,
+      { type: "topic" },
+      { "if-match": created.updated_at }
+    );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/body_md: null/);
+  });
+
+  it("allows type permanent → topic when body is cleared to null in same request", async () => {
+    const created = (await (
+      await post("/api/notes", {
+        title: "P",
+        type: "permanent",
+        body_md: "will go away"
+      })
+    ).json()) as { id: string; updated_at: string };
+
+    const res = await patch(
+      `/api/notes/${created.id}`,
+      { type: "topic", body_md: null },
+      { "if-match": created.updated_at }
+    );
+    expect(res.status).toBe(200);
+    const note = (await res.json()) as { type: string; body_md: string | null };
+    expect(note.type).toBe("topic");
+    expect(note.body_md).toBeNull();
+  });
 });
 
 describe("DELETE /api/notes/:id", () => {
