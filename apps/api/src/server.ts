@@ -17,6 +17,7 @@ import { manuscriptsRoute } from "./routes/manuscripts";
 import { manuscriptExportsRoute } from "./routes/manuscript-exports";
 import { sourcesRoute } from "./routes/sources";
 import { mlRoute } from "./routes/ml";
+import { searchRoute } from "./routes/search";
 
 export const app = new Hono();
 
@@ -40,6 +41,8 @@ app.route("/api/manuscripts", manuscriptsRoute);
 app.route("/api/manuscripts", manuscriptExportsRoute);
 app.route("/api/sources", sourcesRoute);
 app.route("/api/ml", mlRoute);
+app.route("/api/search", searchRoute);
+app.route("/api/notes", searchRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
