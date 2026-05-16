@@ -174,5 +174,37 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ pages })
     });
+  },
+
+  listCustomLinkTypes(): Promise<{
+    customLinkTypes: { id: string; name: string; description: string | null; created_at: string }[];
+  }> {
+    return request("/api/custom-link-types", { method: "GET" });
+  },
+
+  createCustomLinkType(input: {
+    name: string;
+    description?: string;
+  }): Promise<{ id: string; name: string; description: string | null; created_at: string }> {
+    return request("/api/custom-link-types", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
+  },
+
+  updateCustomLinkType(
+    id: string,
+    input: { name?: string; description?: string | null }
+  ): Promise<{ id: string; name: string; description: string | null; created_at: string }> {
+    return request(`/api/custom-link-types/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
+  },
+
+  deleteCustomLinkType(id: string): Promise<void> {
+    return request(`/api/custom-link-types/${id}`, { method: "DELETE" });
   }
 };
