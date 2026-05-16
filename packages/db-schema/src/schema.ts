@@ -371,3 +371,28 @@ export const embeddings = pgTable("embedding", {
     .defaultNow()
     .notNull()
 });
+
+export const suggestionFeedback = pgTable(
+  "suggestion_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fromNoteId: uuid("from_note_id").references(() => notes.id, {
+      onDelete: "cascade"
+    }),
+    toNoteId: uuid("to_note_id")
+      .notNull()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    action: text("action").notNull(),
+    surfacedAt: timestamp("surfaced_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (t) => [
+    index("suggestion_feedback_to_idx").on(t.toNoteId),
+    check(
+      "suggestion_feedback_action_check",
+      sql`${t.action} IN ('accepted', 'rejected', 'dismissed')`
+    )
+  ]
+);

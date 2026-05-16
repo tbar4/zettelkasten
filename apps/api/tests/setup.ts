@@ -21,7 +21,7 @@ beforeAll(() => {
 beforeEach(async () => {
   // Wipe data between tests. TRUNCATE CASCADE keeps schema, drops rows.
   await db.execute(
-    rawSql`TRUNCATE TABLE manuscript_section, manuscript, canvas_edge, canvas_item, canvas, note_source, highlight, source, spaced_review, note_tag, note_link, custom_link_type, tag, embedding, note RESTART IDENTITY CASCADE`
+    rawSql`TRUNCATE TABLE suggestion_feedback, manuscript_section, manuscript, canvas_edge, canvas_item, canvas, note_source, highlight, source, spaced_review, note_tag, note_link, custom_link_type, tag, embedding, note RESTART IDENTITY CASCADE`
   );
 });
 
