@@ -6,11 +6,11 @@ See [`docs/superpowers/specs/2026-05-15-zettelkasten-app-design.md`](docs/superp
 
 ## Current status
 
-**M1 feature-complete.** The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a backlinks panel with note titles, inline tag editing, a ⌘K command palette over Postgres FTS, a Sigma.js graph view at `/graph`, a triage inbox at `/inbox` with spaced-repetition daily review, fleeting-note promotion, and Readwise-highlight promotion, a markdown mirror worker that writes every note to `~/Notes/zettel/` with git auto-commits, a Readwise sync worker that pulls highlights into the inbox, and a one-shot Notion importer at `/import/notion` that converts pages to typed notes with bulk re-typing and mention-to-wikilink rewriting.
+**M1 + M2 Plans 1–4 complete.** The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a backlinks panel with note titles, inline tag editing, a ⌘K command palette over Postgres FTS, a Sigma.js graph view at `/graph`, a triage inbox at `/inbox` with spaced-repetition daily review, fleeting-note promotion, and Readwise-highlight promotion, a markdown mirror worker that writes every note to `~/Notes/zettel/` with git auto-commits, a Readwise sync worker that pulls highlights into the inbox, a one-shot Notion importer at `/import/notion` that converts pages to typed notes with bulk re-typing and mention-to-wikilink rewriting, a Manuscript editor with transclusion/copy sections, and manuscript export to Markdown, LaTeX, and DOCX (via Pandoc).
 
 ## Setup
 
-Prerequisites: Node 22, pnpm 9+, Docker Desktop.
+Prerequisites: Node 22, pnpm 9+, Docker Desktop. **Optional:** [Pandoc](https://pandoc.org/installing.html) for LaTeX and DOCX manuscript export.
 
 ```bash
 pnpm install
