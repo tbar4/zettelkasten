@@ -42,6 +42,9 @@ function Root() {
         <Link to="/settings/link-types" style={{ fontSize: 14, color: "#7aa2f7" }}>
           Link Types
         </Link>
+        <Link to="/settings/sources" style={{ fontSize: 14, color: "#7aa2f7" }}>
+          Sources
+        </Link>
         <span style={{ marginLeft: "auto", fontSize: 12, color: "#666" }}>
           ⌘K to search
         </span>
