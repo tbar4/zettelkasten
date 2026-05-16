@@ -4,6 +4,7 @@ import type { NotionClient, NotionPage } from "./client";
 import { blocksToMarkdown } from "./blocks-to-markdown";
 import { detectType, type NoteType } from "./typer";
 import { extractMentionIds, rewriteMentions } from "./mentions";
+import { syncWikilinks } from "../lib/wikilinks-sync";
 
 export interface PreviewPage {
   notionPageId: string;
@@ -101,6 +102,8 @@ export async function commitImport(
   let updated = 0;
 
   await db.transaction(async (tx: typeof db) => {
+    const upserted: { id: string; bodyMd: string | null }[] = [];
+
     for (const p of pages) {
       const rewrittenBody = rewriteMentions(p.body, titleByPageId);
       const bodyMd = p.type === "topic" ? null : rewrittenBody;
@@ -121,15 +124,24 @@ export async function commitImport(
           })
           .where(eq(notes.id, existing.id));
         updated++;
+        upserted.push({ id: existing.id as string, bodyMd });
       } else {
-        await tx.insert(notes).values({
-          type: p.type,
-          title: p.title,
-          bodyMd,
-          notionPageId: p.notionPageId
-        });
+        const [row] = await tx
+          .insert(notes)
+          .values({
+            type: p.type,
+            title: p.title,
+            bodyMd,
+            notionPageId: p.notionPageId
+          })
+          .returning({ id: notes.id });
         inserted++;
+        upserted.push({ id: (row as { id: string }).id, bodyMd });
       }
+    }
+
+    for (const u of upserted) {
+      await syncWikilinks(tx, u.id, u.bodyMd);
     }
   });
 

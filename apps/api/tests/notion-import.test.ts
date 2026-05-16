@@ -151,4 +151,31 @@ describe("commitImport", () => {
     const rows = await db.select().from(schema.notes);
     expect(rows[0]!.bodyMd).toBe("See [[Fallback Label]] for more.");
   });
+
+  it("materializes note_link rows for cross-page wikilinks after import", async () => {
+    await clearDb();
+    const pages = [
+      {
+        notionPageId: "target-id",
+        title: "Target Page",
+        body: "I am the target.",
+        type: "permanent" as const
+      },
+      {
+        notionPageId: "source-id",
+        title: "Source Page",
+        body: "See [[notion:page:target-id|Target Page]] for more.",
+        type: "permanent" as const
+      }
+    ];
+    await commitImport(db, pages);
+    const noteRows = await db.select().from(schema.notes);
+    const source = noteRows.find((r) => r.notionPageId === "source-id")!;
+    const target = noteRows.find((r) => r.notionPageId === "target-id")!;
+    const links = await db.select().from(schema.noteLinks);
+    expect(links).toHaveLength(1);
+    expect(links[0]!.fromNoteId).toBe(source.id);
+    expect(links[0]!.toNoteId).toBe(target.id);
+    expect(links[0]!.source).toBe("wikilink");
+  });
 });
