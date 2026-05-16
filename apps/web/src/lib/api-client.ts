@@ -434,6 +434,10 @@ export const api = {
 
   manuscriptExportUrl(id: string, format: "md" | "latex" | "docx"): string {
     return `/api/manuscripts/${id}/export?format=${format}`;
+  },
+
+  bibtexUrl(): string {
+    return "/api/sources/bibtex";
   }
 };
 
