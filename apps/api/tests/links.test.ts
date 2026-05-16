@@ -140,3 +140,60 @@ describe("DELETE /api/links/:id", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("POST /api/links with custom link type", () => {
+  async function createCustomType(name: string): Promise<string> {
+    const res = await post("/api/custom-link-types", { name });
+    const body = (await res.json()) as { id: string };
+    return body.id;
+  }
+
+  it("creates a link with a custom link type id", async () => {
+    const from = await createNote("A");
+    const to = await createNote("B");
+    const customTypeId = await createCustomType("inspires");
+
+    const res = await post("/api/links", {
+      from_note_id: from,
+      to_note_id: to,
+      custom_link_type_id: customTypeId
+    });
+    expect(res.status).toBe(201);
+    const link = (await res.json()) as {
+      custom_link_type_id: string | null;
+      custom_link_type_name: string | null;
+    };
+    expect(link.custom_link_type_id).toBe(customTypeId);
+    expect(link.custom_link_type_name).toBe("inspires");
+  });
+
+  it("returns custom_link_type_name in GET /api/notes/:id/links", async () => {
+    const a = await createNote("A");
+    const b = await createNote("B");
+    const customTypeId = await createCustomType("challenges");
+
+    await post("/api/links", {
+      from_note_id: a,
+      to_note_id: b,
+      custom_link_type_id: customTypeId
+    });
+
+    const res = await app.request(`/api/notes/${a}/links`);
+    const body = (await res.json()) as {
+      outgoing: { custom_link_type_id: string | null; custom_link_type_name: string | null }[];
+    };
+    expect(body.outgoing[0]!.custom_link_type_id).toBe(customTypeId);
+    expect(body.outgoing[0]!.custom_link_type_name).toBe("challenges");
+  });
+
+  it("returns 400 when custom_link_type_id is unknown uuid", async () => {
+    const from = await createNote("A");
+    const to = await createNote("B");
+    const res = await post("/api/links", {
+      from_note_id: from,
+      to_note_id: to,
+      custom_link_type_id: "550e8400-e29b-41d4-a716-446655440099"
+    });
+    expect(res.status).toBe(400);
+  });
+});
