@@ -224,5 +224,130 @@ export const api = {
 
   deleteCustomLinkType(id: string): Promise<void> {
     return request(`/api/custom-link-types/${id}`, { method: "DELETE" });
+  },
+
+  canvasByTopic(topicNoteId: string): Promise<{
+    id: string;
+    topic_note_id: string;
+    scene_data: string | null;
+    viewport: string | null;
+    theme: string | null;
+    created_at: string;
+    updated_at: string;
+    items: {
+      id: string;
+      canvas_id: string;
+      note_id: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      color: string | null;
+      z_index: number;
+      created_at: string;
+    }[];
+    edges: {
+      id: string;
+      canvas_id: string;
+      from_item_id: string;
+      to_item_id: string;
+      label: string | null;
+      color: string | null;
+      created_at: string;
+    }[];
+  }> {
+    return request(`/api/canvases/by-topic/${topicNoteId}`, { method: "GET" });
+  },
+
+  updateCanvas(
+    id: string,
+    patch: { scene_data?: string; viewport?: string; theme?: string }
+  ): Promise<{
+    id: string;
+    topic_note_id: string;
+    scene_data: string | null;
+    viewport: string | null;
+    theme: string | null;
+    created_at: string;
+    updated_at: string;
+    items: unknown[];
+    edges: unknown[];
+  }> {
+    return request(`/api/canvases/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch)
+    });
+  },
+
+  addCanvasItem(
+    canvasId: string,
+    body: { noteId: string; x: number; y: number; width?: number; height?: number; color?: string }
+  ): Promise<{
+    id: string;
+    canvas_id: string;
+    note_id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    color: string | null;
+    z_index: number;
+    created_at: string;
+  }> {
+    return request(`/api/canvases/${canvasId}/items`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+  },
+
+  updateCanvasItem(
+    itemId: string,
+    patch: { x?: number; y?: number; width?: number; height?: number; color?: string | null; zIndex?: number }
+  ): Promise<{
+    id: string;
+    canvas_id: string;
+    note_id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    color: string | null;
+    z_index: number;
+    created_at: string;
+  }> {
+    return request(`/api/canvases/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch)
+    });
+  },
+
+  deleteCanvasItem(itemId: string): Promise<void> {
+    return request(`/api/canvases/items/${itemId}`, { method: "DELETE" });
+  },
+
+  addCanvasEdge(
+    canvasId: string,
+    body: { fromItemId: string; toItemId: string; label?: string; color?: string }
+  ): Promise<{
+    id: string;
+    canvas_id: string;
+    from_item_id: string;
+    to_item_id: string;
+    label: string | null;
+    color: string | null;
+    created_at: string;
+  }> {
+    return request(`/api/canvases/${canvasId}/edges`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+  },
+
+  deleteCanvasEdge(edgeId: string): Promise<void> {
+    return request(`/api/canvases/edges/${edgeId}`, { method: "DELETE" });
   }
 };

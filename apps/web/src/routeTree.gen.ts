@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsLinkTypesRouteImport } from './routes/settings.link-types'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as ImportNotionRouteImport } from './routes/import.notion'
+import { Route as TopicsNoteIdCanvasRouteImport } from './routes/topics.$noteId.canvas'
 
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
@@ -46,6 +47,11 @@ const ImportNotionRoute = ImportNotionRouteImport.update({
   path: '/import/notion',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TopicsNoteIdCanvasRoute = TopicsNoteIdCanvasRouteImport.update({
+  id: '/topics/$noteId/canvas',
+  path: '/topics/$noteId/canvas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/import/notion'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/topics/$noteId/canvas'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +99,7 @@ export interface FileRouteTypes {
     | '/import/notion'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/topics/$noteId/canvas'
   id:
     | '__root__'
     | '/'
@@ -97,6 +108,7 @@ export interface FileRouteTypes {
     | '/import/notion'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/topics/$noteId/canvas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +118,7 @@ export interface RootRouteChildren {
   ImportNotionRoute: typeof ImportNotionRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
   SettingsLinkTypesRoute: typeof SettingsLinkTypesRoute
+  TopicsNoteIdCanvasRoute: typeof TopicsNoteIdCanvasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImportNotionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/topics/$noteId/canvas': {
+      id: '/topics/$noteId/canvas'
+      path: '/topics/$noteId/canvas'
+      fullPath: '/topics/$noteId/canvas'
+      preLoaderRoute: typeof TopicsNoteIdCanvasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -162,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImportNotionRoute: ImportNotionRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
   SettingsLinkTypesRoute: SettingsLinkTypesRoute,
+  TopicsNoteIdCanvasRoute: TopicsNoteIdCanvasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
