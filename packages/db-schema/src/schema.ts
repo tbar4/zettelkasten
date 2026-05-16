@@ -40,6 +40,18 @@ const tsvector = customType<{ data: string; driverData: string }>({
   }
 });
 
+const vector768 = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return "vector(768)";
+  },
+  fromDriver(v: string) {
+    return JSON.parse(v);
+  },
+  toDriver(v: number[]) {
+    return `[${v.join(",")}]`;
+  }
+});
+
 export const notes = pgTable(
   "note",
   {
@@ -348,3 +360,14 @@ export const manuscriptSections = pgTable(
     index("manuscript_section_position_idx").on(t.manuscriptId, t.position)
   ]
 );
+
+export const embeddings = pgTable("embedding", {
+  noteId: uuid("note_id")
+    .primaryKey()
+    .references(() => notes.id, { onDelete: "cascade" }),
+  vector: vector768("vector").notNull(),
+  modelVersion: text("model_version").notNull(),
+  generatedAt: timestamp("generated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull()
+});
