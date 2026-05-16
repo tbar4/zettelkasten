@@ -13,6 +13,7 @@ import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
+import { Route as ImportNotionRouteImport } from './routes/import.notion'
 
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
@@ -34,17 +35,24 @@ const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
   path: '/notes/$noteId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ImportNotionRoute = ImportNotionRouteImport.update({
+  id: '/import/notion',
+  path: '/import/notion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
+  '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
+  '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,28 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
+  '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/graph' | '/inbox' | '/notes/$noteId'
+  fullPaths: '/' | '/graph' | '/inbox' | '/import/notion' | '/notes/$noteId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/graph' | '/inbox' | '/notes/$noteId'
-  id: '__root__' | '/' | '/graph' | '/inbox' | '/notes/$noteId'
+  to: '/' | '/graph' | '/inbox' | '/import/notion' | '/notes/$noteId'
+  id:
+    | '__root__'
+    | '/'
+    | '/graph'
+    | '/inbox'
+    | '/import/notion'
+    | '/notes/$noteId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GraphRoute: typeof GraphRoute
   InboxRoute: typeof InboxRoute
+  ImportNotionRoute: typeof ImportNotionRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
 }
 
@@ -99,6 +115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotesNoteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/import/notion': {
+      id: '/import/notion'
+      path: '/import/notion'
+      fullPath: '/import/notion'
+      preLoaderRoute: typeof ImportNotionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -106,6 +129,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GraphRoute: GraphRoute,
   InboxRoute: InboxRoute,
+  ImportNotionRoute: ImportNotionRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
 }
 export const routeTree = rootRouteImport

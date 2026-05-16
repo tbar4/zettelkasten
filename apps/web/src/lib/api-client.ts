@@ -146,5 +146,33 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(titleOverride ? { title: titleOverride } : {})
     });
+  },
+
+  notionPreview(token: string, databaseId: string): Promise<{
+    pages: {
+      notionPageId: string;
+      title: string;
+      body: string;
+      detectedType: "fleeting" | "literature" | "permanent" | "topic";
+    }[];
+  }> {
+    return request("/api/notion/preview", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, databaseId })
+    });
+  },
+
+  notionCommit(pages: {
+    notionPageId: string;
+    title: string;
+    body: string;
+    type: "fleeting" | "literature" | "permanent" | "topic";
+  }[]): Promise<{ inserted: number; updated: number }> {
+    return request("/api/notion/commit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pages })
+    });
   }
 };

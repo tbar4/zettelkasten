@@ -18,6 +18,9 @@ function Root() {
         <Link to="/graph" style={{ fontSize: 14, color: "#7aa2f7" }}>
           Graph
         </Link>
+        <Link to="/import/notion" style={{ fontSize: 14, color: "#7aa2f7" }}>
+          Import
+        </Link>
         <span style={{ marginLeft: "auto", fontSize: 12, color: "#666" }}>
           ⌘K to search
         </span>
