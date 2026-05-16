@@ -82,18 +82,24 @@ describe("ManuscriptView – ExportDropdown", () => {
   });
 
   it("clicking Markdown sets window.location.href", async () => {
-    // jsdom allows overriding location.href
-    const originalLocation = window.location;
-    // @ts-expect-error – overriding read-only in test
-    delete window.location;
-    window.location = { ...originalLocation, href: "" } as Location;
+    // jsdom allows overriding location.href via Object.defineProperty
+    let capturedHref = "";
+    const descriptor = Object.getOwnPropertyDescriptor(window, "location");
+    Object.defineProperty(window, "location", {
+      writable: true,
+      configurable: true,
+      value: { ...window.location, set href(v: string) { capturedHref = v; } }
+    });
 
     await renderAndWait();
     fireEvent.click(screen.getByTestId("export-md"));
 
-    expect(window.location.href).toBe(`/api/manuscripts/${MANUSCRIPT_ID}/export?format=md`);
+    expect(capturedHref).toBe(`/api/manuscripts/${MANUSCRIPT_ID}/export?format=md`);
 
-    window.location = originalLocation;
+    // Restore
+    if (descriptor) {
+      Object.defineProperty(window, "location", descriptor);
+    }
   });
 
   it("shows error when latex export returns 503", async () => {
