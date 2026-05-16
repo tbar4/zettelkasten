@@ -349,5 +349,109 @@ export const api = {
 
   deleteCanvasEdge(edgeId: string): Promise<void> {
     return request(`/api/canvases/edges/${edgeId}`, { method: "DELETE" });
+  },
+
+  listManuscripts(): Promise<{
+    manuscripts: {
+      id: string;
+      title: string;
+      anchor_topic_ids: string[];
+      anchor_count: number;
+      section_count: number;
+      created_at: string;
+      updated_at: string;
+    }[];
+  }> {
+    return request("/api/manuscripts", { method: "GET" });
+  },
+
+  createManuscript(input: {
+    title: string;
+    anchorTopicIds?: string[];
+  }): Promise<ManuscriptDetail> {
+    return request("/api/manuscripts", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
+  },
+
+  getManuscript(id: string): Promise<ManuscriptDetail> {
+    return request(`/api/manuscripts/${id}`, { method: "GET" });
+  },
+
+  updateManuscript(
+    id: string,
+    input: { title?: string; anchorTopicIds?: string[]; bodyMd?: string | null }
+  ): Promise<ManuscriptDetail> {
+    return request(`/api/manuscripts/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
+  },
+
+  deleteManuscript(id: string): Promise<void> {
+    return request(`/api/manuscripts/${id}`, { method: "DELETE" });
+  },
+
+  addManuscriptSection(
+    manuscriptId: string,
+    input: {
+      position?: number;
+      noteId?: string | null;
+      isTransclusion?: boolean;
+      heading?: string | null;
+      frozenBodyMd?: string | null;
+    }
+  ): Promise<ManuscriptSection> {
+    return request(`/api/manuscripts/${manuscriptId}/sections`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
+  },
+
+  updateManuscriptSection(
+    sectionId: string,
+    input: {
+      position?: number;
+      heading?: string | null;
+      isTransclusion?: boolean;
+      frozenBodyMd?: string | null;
+    }
+  ): Promise<ManuscriptSection> {
+    return request(`/api/manuscripts/sections/${sectionId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
+  },
+
+  deleteManuscriptSection(sectionId: string): Promise<void> {
+    return request(`/api/manuscripts/sections/${sectionId}`, { method: "DELETE" });
   }
+};
+
+export type ManuscriptSection = {
+  id: string;
+  manuscript_id: string;
+  position: number;
+  note_id: string | null;
+  note_title: string | null;
+  is_transclusion: boolean;
+  frozen_body_md: string | null;
+  body_md: string | null;
+  heading: string | null;
+  created_at: string;
+};
+
+export type ManuscriptDetail = {
+  id: string;
+  title: string;
+  anchor_topic_ids: string[];
+  body_md: string | null;
+  created_at: string;
+  updated_at: string;
+  sections: ManuscriptSection[];
 };

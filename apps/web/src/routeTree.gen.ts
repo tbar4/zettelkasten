@@ -9,14 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ManuscriptsRouteImport } from './routes/manuscripts'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ManuscriptsIndexRouteImport } from './routes/manuscripts.index'
 import { Route as SettingsLinkTypesRouteImport } from './routes/settings.link-types'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
+import { Route as ManuscriptsManuscriptIdRouteImport } from './routes/manuscripts.$manuscriptId'
 import { Route as ImportNotionRouteImport } from './routes/import.notion'
 import { Route as TopicsNoteIdCanvasRouteImport } from './routes/topics.$noteId.canvas'
 
+const ManuscriptsRoute = ManuscriptsRouteImport.update({
+  id: '/manuscripts',
+  path: '/manuscripts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
@@ -32,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManuscriptsIndexRoute = ManuscriptsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ManuscriptsRoute,
+} as any)
 const SettingsLinkTypesRoute = SettingsLinkTypesRouteImport.update({
   id: '/settings/link-types',
   path: '/settings/link-types',
@@ -41,6 +54,11 @@ const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
   id: '/notes/$noteId',
   path: '/notes/$noteId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ManuscriptsManuscriptIdRoute = ManuscriptsManuscriptIdRouteImport.update({
+  id: '/$manuscriptId',
+  path: '/$manuscriptId',
+  getParentRoute: () => ManuscriptsRoute,
 } as any)
 const ImportNotionRoute = ImportNotionRouteImport.update({
   id: '/import/notion',
@@ -57,9 +75,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
+  '/manuscripts': typeof ManuscriptsRouteWithChildren
   '/import/notion': typeof ImportNotionRoute
+  '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/manuscripts/': typeof ManuscriptsIndexRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
 export interface FileRoutesByTo {
@@ -67,8 +88,10 @@ export interface FileRoutesByTo {
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
   '/import/notion': typeof ImportNotionRoute
+  '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/manuscripts': typeof ManuscriptsIndexRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
 export interface FileRoutesById {
@@ -76,9 +99,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
+  '/manuscripts': typeof ManuscriptsRouteWithChildren
   '/import/notion': typeof ImportNotionRoute
+  '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/manuscripts/': typeof ManuscriptsIndexRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
 export interface FileRouteTypes {
@@ -87,9 +113,12 @@ export interface FileRouteTypes {
     | '/'
     | '/graph'
     | '/inbox'
+    | '/manuscripts'
     | '/import/notion'
+    | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/manuscripts/'
     | '/topics/$noteId/canvas'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,17 +126,22 @@ export interface FileRouteTypes {
     | '/graph'
     | '/inbox'
     | '/import/notion'
+    | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/manuscripts'
     | '/topics/$noteId/canvas'
   id:
     | '__root__'
     | '/'
     | '/graph'
     | '/inbox'
+    | '/manuscripts'
     | '/import/notion'
+    | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/manuscripts/'
     | '/topics/$noteId/canvas'
   fileRoutesById: FileRoutesById
 }
@@ -115,6 +149,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GraphRoute: typeof GraphRoute
   InboxRoute: typeof InboxRoute
+  ManuscriptsRoute: typeof ManuscriptsRouteWithChildren
   ImportNotionRoute: typeof ImportNotionRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
   SettingsLinkTypesRoute: typeof SettingsLinkTypesRoute
@@ -123,6 +158,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/manuscripts': {
+      id: '/manuscripts'
+      path: '/manuscripts'
+      fullPath: '/manuscripts'
+      preLoaderRoute: typeof ManuscriptsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inbox': {
       id: '/inbox'
       path: '/inbox'
@@ -144,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/manuscripts/': {
+      id: '/manuscripts/'
+      path: '/'
+      fullPath: '/manuscripts/'
+      preLoaderRoute: typeof ManuscriptsIndexRouteImport
+      parentRoute: typeof ManuscriptsRoute
+    }
     '/settings/link-types': {
       id: '/settings/link-types'
       path: '/settings/link-types'
@@ -157,6 +206,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/notes/$noteId'
       preLoaderRoute: typeof NotesNoteIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/manuscripts/$manuscriptId': {
+      id: '/manuscripts/$manuscriptId'
+      path: '/$manuscriptId'
+      fullPath: '/manuscripts/$manuscriptId'
+      preLoaderRoute: typeof ManuscriptsManuscriptIdRouteImport
+      parentRoute: typeof ManuscriptsRoute
     }
     '/import/notion': {
       id: '/import/notion'
@@ -175,10 +231,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ManuscriptsRouteChildren {
+  ManuscriptsManuscriptIdRoute: typeof ManuscriptsManuscriptIdRoute
+  ManuscriptsIndexRoute: typeof ManuscriptsIndexRoute
+}
+
+const ManuscriptsRouteChildren: ManuscriptsRouteChildren = {
+  ManuscriptsManuscriptIdRoute: ManuscriptsManuscriptIdRoute,
+  ManuscriptsIndexRoute: ManuscriptsIndexRoute,
+}
+
+const ManuscriptsRouteWithChildren = ManuscriptsRoute._addFileChildren(
+  ManuscriptsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GraphRoute: GraphRoute,
   InboxRoute: InboxRoute,
+  ManuscriptsRoute: ManuscriptsRouteWithChildren,
   ImportNotionRoute: ImportNotionRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
   SettingsLinkTypesRoute: SettingsLinkTypesRoute,
