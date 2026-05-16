@@ -19,6 +19,7 @@ import { sourcesRoute } from "./routes/sources";
 import { mlRoute } from "./routes/ml";
 import { searchRoute } from "./routes/search";
 import { askRoute } from "./routes/ask";
+import { suggestionFeedbackRoute } from "./routes/suggestion-feedback";
 
 export const app = new Hono();
 
@@ -45,6 +46,7 @@ app.route("/api/ml", mlRoute);
 app.route("/api/search", searchRoute);
 app.route("/api/notes", searchRoute);
 app.route("/api/ask", askRoute);
+app.route("/api/suggestion-feedback", suggestionFeedbackRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {

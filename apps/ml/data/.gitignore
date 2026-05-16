@@ -1,0 +1,4 @@
+# Skip model weights and training state files
+*.pt
+*.pth
+last_train_count.txt

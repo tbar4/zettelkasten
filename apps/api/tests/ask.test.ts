@@ -58,11 +58,19 @@ async function insertEmbedding(noteId: string, vec: number[]): Promise<void> {
 }
 
 function mockMlClient(vec: number[]): MLClient {
-  return { async embed(_texts: string[]) { return { vectors: [vec], modelVersion: "test" }; } };
+  return {
+    async embed(_texts: string[]) { return { vectors: [vec], modelVersion: "test" }; },
+    async rerank(features: number[][]) { return { scores: features.map(() => 0.5) }; },
+    async trainReranker(_features, _labels) { return { trained: 0, loss: 0 }; }
+  };
 }
 
 function failingMlClient(): MLClient {
-  return { async embed(_texts: string[]) { throw new Error("ML down"); } };
+  return {
+    async embed(_texts: string[]) { throw new Error("ML down"); },
+    async rerank(_features) { throw new Error("ML down"); },
+    async trainReranker(_features, _labels) { throw new Error("ML down"); }
+  };
 }
 
 function mockOllamaClient(tokens: string[]): OllamaClient {

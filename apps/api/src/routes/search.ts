@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { zodErrorHook } from "../lib/zod-error-hook";
 import { httpMlClient, type MLClient } from "../lib/ml-client";
+import { computeFeatures, featuresToVector } from "../lib/reranker-features";
 
 // Allow injection of a custom ML client (for testing)
 let _mlClient: MLClient | null = null;
@@ -39,11 +40,59 @@ interface NoteRow {
   similarity: number;
 }
 
+/** Cold-start gate: return true if we have >= 30 feedback rows */
+async function hasSufficientFeedback(): Promise<boolean> {
+  const rows = await db.execute<{ count: string }>(
+    sql`SELECT COUNT(*)::text AS count FROM suggestion_feedback`
+  );
+  return Number(rows[0]?.count ?? "0") >= 30;
+}
+
+/**
+ * Re-rank results using the ML service. Returns the re-ordered list.
+ * Falls back to original order on any error.
+ */
+async function tryRerank(
+  results: NoteRow[],
+  fromNoteId: string | null
+): Promise<{ results: NoteRow[]; usingReranker: boolean }> {
+  try {
+    const sufficient = await hasSufficientFeedback();
+    if (!sufficient) {
+      return { results, usingReranker: false };
+    }
+
+    // Compute feature vectors for all candidates in parallel
+    const featureVectors = await Promise.all(
+      results.map((r) =>
+        computeFeatures(fromNoteId, r.id)
+          .then(featuresToVector)
+          .catch(() => [0, 0, 0, 0, 0] as number[])
+      )
+    );
+
+    const mlClient = getMlClient();
+    const { scores } = await mlClient.rerank(featureVectors);
+
+    // Zip results with scores and sort descending by re-rank score
+    const ranked = results
+      .map((r, i) => ({ r, score: scores[i] ?? 0 }))
+      .sort((a, b) => b.score - a.score)
+      .map(({ r }) => r);
+
+    return { results: ranked, usingReranker: true };
+  } catch {
+    // Fall back to original embedding order on any error
+    return { results, usingReranker: false };
+  }
+}
+
 /**
  * GET /api/search/semantic?q=...&limit=10
  *
  * Embeds the query via ML service, then runs cosine-distance query against
  * the embedding table. Returns notes ordered by similarity descending.
+ * If >= 30 feedback events exist, results are re-ranked by the personal MLP.
  */
 searchRoute.get(
   "/semantic",
@@ -81,14 +130,17 @@ searchRoute.get(
       `);
     });
 
-    const results: NoteRow[] = rows.map((r) => ({
+    const initial: NoteRow[] = rows.map((r) => ({
       id: r.id,
       title: r.title,
       type: r.type,
       similarity: Number(r.similarity)
     }));
 
-    return c.json({ results });
+    // fromNoteId is null for free-text semantic search — skip re-rank
+    const { results, usingReranker } = await tryRerank(initial, null);
+
+    return c.json({ results, usingReranker });
   }
 );
 
@@ -97,7 +149,7 @@ searchRoute.get(
  *
  * Fetches the note's stored embedding, then finds the top-K most similar notes
  * (excluding the note itself). Returns `reason: "no-embedding"` if the source
- * note has no embedding row.
+ * note has no embedding row. If >= 30 feedback events exist, re-ranks with MLP.
  */
 searchRoute.get(
   "/:id/related",
@@ -138,13 +190,15 @@ searchRoute.get(
       `);
     });
 
-    const results: NoteRow[] = rows.map((r) => ({
+    const initial: NoteRow[] = rows.map((r) => ({
       id: r.id,
       title: r.title,
       type: r.type,
       similarity: Number(r.similarity)
     }));
 
-    return c.json({ results });
+    const { results, usingReranker } = await tryRerank(initial, id);
+
+    return c.json({ results, usingReranker });
   }
 );
