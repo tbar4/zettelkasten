@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { api } from "../lib/api-client";
 import type { ManuscriptSection } from "../lib/api-client";
 
+type ExportFormat = "md" | "latex" | "docx";
+
 interface ManuscriptViewProps {
   manuscriptId: string;
 }
@@ -160,6 +162,7 @@ export function ManuscriptView({ manuscriptId }: ManuscriptViewProps) {
       />
 
       <CenterPane
+        manuscriptId={manuscriptId}
         sections={sections}
         onMoveUp={(id) => moveMutation.mutate({ sectionId: id, direction: "up" })}
         onMoveDown={(id) => moveMutation.mutate({ sectionId: id, direction: "down" })}
@@ -274,7 +277,92 @@ function LeftRail({
   );
 }
 
+interface ExportDropdownProps {
+  manuscriptId: string;
+}
+
+function ExportDropdown({ manuscriptId }: ExportDropdownProps) {
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  async function handleExport(format: ExportFormat) {
+    setExportError(null);
+
+    // For latex/docx we need to check if the server reports pandoc unavailable.
+    // We HEAD/GET the URL — but since the browser can't easily read response
+    // headers for window.location.href, we do a quick fetch check first for
+    // non-md formats.
+    if (format === "latex" || format === "docx") {
+      try {
+        const url = api.manuscriptExportUrl(manuscriptId, format);
+        const res = await fetch(url, { method: "GET" });
+        if (res.status === 503) {
+          const body = (await res.json()) as { error?: string };
+          setExportError(body.error ?? "Pandoc not installed");
+          return;
+        }
+        // For binary formats that succeeded, trigger download via blob
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const cd = res.headers.get("content-disposition") ?? "";
+        const filenameMatch = cd.match(/filename="([^"]+)"/);
+        a.href = objectUrl;
+        a.download = filenameMatch ? filenameMatch[1]! : `manuscript.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(objectUrl);
+      } catch {
+        setExportError("Export failed");
+      }
+      return;
+    }
+
+    // For markdown, let the browser handle it directly
+    window.location.href = api.manuscriptExportUrl(manuscriptId, format);
+  }
+
+  return (
+    <div
+      data-testid="export-dropdown"
+      style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}
+    >
+      <span style={{ fontSize: 13, color: "#888" }}>Export:</span>
+      <button
+        style={{ fontSize: 12 }}
+        data-testid="export-md"
+        onClick={() => void handleExport("md")}
+      >
+        Markdown
+      </button>
+      <button
+        style={{ fontSize: 12 }}
+        data-testid="export-latex"
+        onClick={() => void handleExport("latex")}
+      >
+        LaTeX
+      </button>
+      <button
+        style={{ fontSize: 12 }}
+        data-testid="export-docx"
+        onClick={() => void handleExport("docx")}
+      >
+        DOCX
+      </button>
+      {exportError && (
+        <span
+          data-testid="export-error"
+          style={{ fontSize: 12, color: "#f7768e", marginLeft: 4 }}
+        >
+          {exportError}
+        </span>
+      )}
+    </div>
+  );
+}
+
 interface CenterPaneProps {
+  manuscriptId: string;
   sections: ManuscriptSection[];
   onMoveUp: (id: string) => void;
   onMoveDown: (id: string) => void;
@@ -285,6 +373,7 @@ interface CenterPaneProps {
 }
 
 function CenterPane({
+  manuscriptId,
   sections,
   onMoveUp,
   onMoveDown,
@@ -295,6 +384,8 @@ function CenterPane({
 }: CenterPaneProps) {
   return (
     <div style={{ overflowY: "auto" }}>
+      <ExportDropdown manuscriptId={manuscriptId} />
+
       {sections.length === 0 && (
         <p style={{ color: "#666" }}>No sections yet. Add one from the left rail or below.</p>
       )}

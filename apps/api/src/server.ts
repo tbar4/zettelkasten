@@ -14,6 +14,7 @@ import { notionRoute } from "./routes/notion";
 import { customLinkTypesRoute } from "./routes/custom-link-types";
 import { canvasesRoute } from "./routes/canvases";
 import { manuscriptsRoute } from "./routes/manuscripts";
+import { manuscriptExportsRoute } from "./routes/manuscript-exports";
 
 export const app = new Hono();
 
@@ -34,6 +35,7 @@ app.route("/api/notion", notionRoute);
 app.route("/api/custom-link-types", customLinkTypesRoute);
 app.route("/api/canvases", canvasesRoute);
 app.route("/api/manuscripts", manuscriptsRoute);
+app.route("/api/manuscripts", manuscriptExportsRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
