@@ -12,11 +12,23 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ManuscriptsRouteImport } from './routes/manuscripts'
+import { Route as ManuscriptsManuscriptIdRouteImport } from './routes/manuscripts.$manuscriptId'
 import { Route as SettingsLinkTypesRouteImport } from './routes/settings.link-types'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as ImportNotionRouteImport } from './routes/import.notion'
 import { Route as TopicsNoteIdCanvasRouteImport } from './routes/topics.$noteId.canvas'
 
+const ManuscriptsRoute = ManuscriptsRouteImport.update({
+  id: '/manuscripts',
+  path: '/manuscripts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManuscriptsManuscriptIdRoute = ManuscriptsManuscriptIdRouteImport.update({
+  id: '/manuscripts/$manuscriptId',
+  path: '/manuscripts/$manuscriptId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
@@ -58,6 +70,8 @@ export interface FileRoutesByFullPath {
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
   '/import/notion': typeof ImportNotionRoute
+  '/manuscripts': typeof ManuscriptsRoute
+  '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
@@ -67,6 +81,8 @@ export interface FileRoutesByTo {
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
   '/import/notion': typeof ImportNotionRoute
+  '/manuscripts': typeof ManuscriptsRoute
+  '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
@@ -77,6 +93,8 @@ export interface FileRoutesById {
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
   '/import/notion': typeof ImportNotionRoute
+  '/manuscripts': typeof ManuscriptsRoute
+  '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
@@ -88,6 +106,8 @@ export interface FileRouteTypes {
     | '/graph'
     | '/inbox'
     | '/import/notion'
+    | '/manuscripts'
+    | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
     | '/topics/$noteId/canvas'
@@ -97,6 +117,8 @@ export interface FileRouteTypes {
     | '/graph'
     | '/inbox'
     | '/import/notion'
+    | '/manuscripts'
+    | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
     | '/topics/$noteId/canvas'
@@ -106,6 +128,8 @@ export interface FileRouteTypes {
     | '/graph'
     | '/inbox'
     | '/import/notion'
+    | '/manuscripts'
+    | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
     | '/topics/$noteId/canvas'
@@ -116,6 +140,8 @@ export interface RootRouteChildren {
   GraphRoute: typeof GraphRoute
   InboxRoute: typeof InboxRoute
   ImportNotionRoute: typeof ImportNotionRoute
+  ManuscriptsRoute: typeof ManuscriptsRoute
+  ManuscriptsManuscriptIdRoute: typeof ManuscriptsManuscriptIdRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
   SettingsLinkTypesRoute: typeof SettingsLinkTypesRoute
   TopicsNoteIdCanvasRoute: typeof TopicsNoteIdCanvasRoute
@@ -172,6 +198,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TopicsNoteIdCanvasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/manuscripts': {
+      id: '/manuscripts'
+      path: '/manuscripts'
+      fullPath: '/manuscripts'
+      preLoaderRoute: typeof ManuscriptsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manuscripts/$manuscriptId': {
+      id: '/manuscripts/$manuscriptId'
+      path: '/manuscripts/$manuscriptId'
+      fullPath: '/manuscripts/$manuscriptId'
+      preLoaderRoute: typeof ManuscriptsManuscriptIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -180,6 +220,8 @@ const rootRouteChildren: RootRouteChildren = {
   GraphRoute: GraphRoute,
   InboxRoute: InboxRoute,
   ImportNotionRoute: ImportNotionRoute,
+  ManuscriptsRoute: ManuscriptsRoute,
+  ManuscriptsManuscriptIdRoute: ManuscriptsManuscriptIdRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
   SettingsLinkTypesRoute: SettingsLinkTypesRoute,
   TopicsNoteIdCanvasRoute: TopicsNoteIdCanvasRoute,
