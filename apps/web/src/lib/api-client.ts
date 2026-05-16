@@ -442,6 +442,10 @@ export const api = {
 
   bibtexUrl(): string {
     return "/api/sources/bibtex";
+  },
+
+  getEmbeddingStatus(): Promise<{ total: number; embedded: number; stale: number }> {
+    return request("/api/ml/embedding-status", { method: "GET" });
   }
 };
 

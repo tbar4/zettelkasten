@@ -11,6 +11,7 @@
     "dev:web": "pnpm --filter @zk/web dev",
     "dev:mirror": "pnpm --filter @zk/mirror dev",
     "dev:readwise": "pnpm --filter @zk/readwise dev",
+    "dev:embedding-worker": "pnpm --filter @zk/embedding-worker dev",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "build": "pnpm -r build",
     "db:up": "docker compose up -d postgres redis",

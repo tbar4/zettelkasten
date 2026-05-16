@@ -58,6 +58,28 @@ importers:
         specifier: ^2.1.4
         version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)(sass@1.51.0)(terser@5.47.1)
 
+  apps/embedding-worker:
+    dependencies:
+      '@zk/db-schema':
+        specifier: workspace:*
+        version: link:../../packages/db-schema
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(@types/react@18.3.28)(postgres@3.4.9)(react@18.3.1)
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.9
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)(sass@1.51.0)(terser@5.47.1)
+
   apps/mirror:
     dependencies:
       '@zk/db-schema':
