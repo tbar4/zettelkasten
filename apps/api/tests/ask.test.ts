@@ -215,3 +215,65 @@ describe("POST /api/ask", () => {
     expect(citations.notes).toHaveLength(2);
   });
 });
+
+describe("POST /api/ask/draft", () => {
+  beforeEach(() => {
+    setAskMlClient(null);
+    setAskOllamaClient(null);
+    resetOllamaAvailability();
+  });
+
+  afterAll(() => {
+    setAskMlClient(null);
+    setAskOllamaClient(null);
+  });
+
+  it("returns 503 when Ollama is unavailable", async () => {
+    await setAvailable(false);
+    setAskOllamaClient(mockOllamaClient(["draft"]));
+
+    const res = await app.request("/api/ask/draft", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        question: "What is knowledge?",
+        answer: "Knowledge is justified true belief.",
+        citedNoteIds: []
+      })
+    });
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toContain("Ollama");
+  });
+
+  it("returns 400 when question is missing", async () => {
+    await setAvailable(true);
+    setAskOllamaClient(mockOllamaClient([]));
+
+    const res = await app.request("/api/ask/draft", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ question: "", answer: "some answer" })
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("returns a draft from the Ollama response", async () => {
+    await setAvailable(true);
+    setAskOllamaClient(mockOllamaClient(["Knowledge is a ", "justified true belief [[Gettier]]."]));
+
+    const res = await app.request("/api/ask/draft", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        question: "What is knowledge?",
+        answer: "Knowledge is justified true belief.",
+        citedNoteIds: []
+      })
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { draft: string };
+    expect(body.draft).toBe("Knowledge is a justified true belief [[Gettier]].");
+  });
+});

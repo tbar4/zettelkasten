@@ -177,3 +177,54 @@ askRoute.post(
     });
   }
 );
+
+const DraftBodySchema = z.object({
+  question: z.string().min(1),
+  answer: z.string().min(1),
+  citedNoteIds: z.array(z.string().uuid()).default([])
+});
+
+const DRAFT_SYSTEM_PROMPT = `Rewrite the following Q&A as a single atomic claim in the user's first-person voice.
+Keep it under 200 words. Preserve [[wikilink]] citations.`;
+
+/**
+ * POST /api/ask/draft
+ *
+ * Takes a Q&A pair and cited note IDs, sends to Ollama with a rewriting
+ * prompt, and returns the draft as plain text (non-streaming).
+ */
+askRoute.post(
+  "/draft",
+  zValidator("json", DraftBodySchema, zodErrorHook),
+  async (c) => {
+    const ollamaOk = await isOllamaAvailable(
+      process.env.OLLAMA_URL ?? "http://localhost:11434"
+    );
+    if (!ollamaOk) {
+      return c.json({ error: "Ollama not available" }, 503);
+    }
+
+    const { question, answer } = c.req.valid("json");
+
+    const messages: Message[] = [
+      { role: "system", content: DRAFT_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: `Question: ${question}\n\nAnswer: ${answer}`
+      }
+    ];
+
+    const ollamaClient = getOllamaClient();
+    let draft = "";
+    try {
+      for await (const token of ollamaClient.chat(messages)) {
+        draft += token;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return c.json({ error: message }, 500);
+    }
+
+    return c.json({ draft });
+  }
+);
