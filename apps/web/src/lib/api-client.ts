@@ -446,6 +446,28 @@ export const api = {
 
   getEmbeddingStatus(): Promise<{ total: number; embedded: number; stale: number }> {
     return request("/api/ml/embedding-status", { method: "GET" });
+  },
+
+  searchSemantic(
+    q: string,
+    limit = 10
+  ): Promise<{
+    results: { id: string; title: string; type: string; similarity: number }[];
+    reason?: string;
+  }> {
+    const qs = new URLSearchParams({ q, limit: String(limit) }).toString();
+    return request(`/api/search/semantic?${qs}`, { method: "GET" });
+  },
+
+  getRelatedNotes(
+    noteId: string,
+    limit = 8
+  ): Promise<{
+    results: { id: string; title: string; type: string; similarity: number }[];
+    reason?: string;
+  }> {
+    const qs = new URLSearchParams({ limit: String(limit) }).toString();
+    return request(`/api/notes/${noteId}/related?${qs}`, { method: "GET" });
   }
 };
 
