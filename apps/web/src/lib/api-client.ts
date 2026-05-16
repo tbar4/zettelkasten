@@ -430,6 +430,10 @@ export const api = {
 
   deleteManuscriptSection(sectionId: string): Promise<void> {
     return request(`/api/manuscripts/sections/${sectionId}`, { method: "DELETE" });
+  },
+
+  manuscriptExportUrl(id: string, format: "md" | "latex" | "docx"): string {
+    return `/api/manuscripts/${id}/export?format=${format}`;
   }
 };
 
