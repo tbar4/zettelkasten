@@ -60,9 +60,6 @@ importers:
       '@zk/db-schema':
         specifier: workspace:*
         version: link:../../packages/db-schema
-      '@zk/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       drizzle-orm:
         specifier: ^0.36.4
         version: 0.36.4(@types/react@18.3.28)(postgres@3.4.9)(react@18.3.1)
