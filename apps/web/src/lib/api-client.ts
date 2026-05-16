@@ -152,6 +152,18 @@ export const api = {
     });
   },
 
+  getInboxReview(): Promise<{
+    review: {
+      id: string;
+      title: string;
+      type: string;
+      next_due_at: string | null;
+      hybrid_score: number;
+    }[];
+  }> {
+    return request("/api/inbox/review", { method: "GET" });
+  },
+
   postReview(
     noteId: string,
     action: "keep" | "archive"

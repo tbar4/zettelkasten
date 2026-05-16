@@ -6,7 +6,8 @@ interface ReviewItem {
   id: string;
   title: string;
   type: string;
-  next_due_at: string;
+  next_due_at?: string | null;
+  hybrid_score?: number;
 }
 
 interface InboxReviewPaneProps {
@@ -45,7 +46,21 @@ export function InboxReviewPane({ items }: InboxReviewPaneProps) {
             >
               {n.title}
             </Link>
-            <span style={{ color: "#888", fontSize: 11 }}>{n.type}</span>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ color: "#888", fontSize: 11 }}>{n.type}</span>
+              {n.hybrid_score !== undefined && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: "#888",
+                    fontStyle: "italic"
+                  }}
+                  title="ML priority score"
+                >
+                  score: {n.hybrid_score.toFixed(2)}
+                </span>
+              )}
+            </div>
             <div className="inbox-row-actions">
               <button
                 onClick={() => reviewMutation.mutate({ id: n.id, action: "keep" })}
