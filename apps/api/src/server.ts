@@ -12,6 +12,7 @@ import { inboxRoute } from "./routes/inbox";
 import { highlightsRoute } from "./routes/highlights";
 import { notionRoute } from "./routes/notion";
 import { customLinkTypesRoute } from "./routes/custom-link-types";
+import { canvasesRoute } from "./routes/canvases";
 
 export const app = new Hono();
 
@@ -30,6 +31,7 @@ app.route("/api/inbox", inboxRoute);
 app.route("/api/highlights", highlightsRoute);
 app.route("/api/notion", notionRoute);
 app.route("/api/custom-link-types", customLinkTypesRoute);
+app.route("/api/canvases", canvasesRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
