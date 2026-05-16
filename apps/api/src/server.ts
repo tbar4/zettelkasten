@@ -11,6 +11,7 @@ import { reviewRoute } from "./routes/review";
 import { inboxRoute } from "./routes/inbox";
 import { highlightsRoute } from "./routes/highlights";
 import { notionRoute } from "./routes/notion";
+import { customLinkTypesRoute } from "./routes/custom-link-types";
 
 export const app = new Hono();
 
@@ -28,6 +29,7 @@ app.route("/api/graph", graphRoute);
 app.route("/api/inbox", inboxRoute);
 app.route("/api/highlights", highlightsRoute);
 app.route("/api/notion", notionRoute);
+app.route("/api/custom-link-types", customLinkTypesRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
