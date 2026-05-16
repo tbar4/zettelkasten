@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api-client";
 import { NoteEditor } from "../components/NoteEditor";
 import { LinksPanel } from "../components/LinksPanel";
+import { RelatedNotesPanel } from "../components/RelatedNotesPanel";
 import { NoteTopBar } from "../components/NoteTopBar";
 import { LiteratureSourceBlock } from "../components/LiteratureSourceBlock";
 
@@ -130,7 +131,10 @@ function NoteDetail() {
           </div>
         </div>
 
-        <LinksPanel noteId={noteId} />
+        <div>
+          <LinksPanel noteId={noteId} />
+          <RelatedNotesPanel noteId={noteId} />
+        </div>
       </div>
     </div>
   );
