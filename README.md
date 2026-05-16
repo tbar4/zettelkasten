@@ -6,7 +6,7 @@ See [`docs/superpowers/specs/2026-05-15-zettelkasten-app-design.md`](docs/superp
 
 ## Current status
 
-**M1 + M2 + M3 Plan 2 complete.** The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a backlinks panel with note titles, inline tag editing, a ⌘K command palette over Postgres FTS, a Sigma.js graph view at `/graph`, a triage inbox at `/inbox` with spaced-repetition daily review, fleeting-note promotion, and Readwise-highlight promotion, a markdown mirror worker that writes every note to `~/Notes/zettel/` with git auto-commits, a Readwise sync worker that pulls highlights into the inbox, a one-shot Notion importer at `/import/notion` that converts pages to typed notes with bulk re-typing and mention-to-wikilink rewriting, a Manuscript editor with transclusion/copy sections, manuscript export to Markdown, LaTeX, and DOCX (via Pandoc), a mobile PWA at `/m/` with offline capture, and a local ML embedding pipeline (FastAPI + sentence-transformers + pgvector).
+**M1 + M2 + M3 Plans 1–4 complete.** The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a backlinks panel with note titles, inline tag editing, a ⌘K command palette over Postgres FTS, a Sigma.js graph view at `/graph`, a triage inbox at `/inbox` with spaced-repetition daily review, fleeting-note promotion, and Readwise-highlight promotion, a markdown mirror worker that writes every note to `~/Notes/zettel/` with git auto-commits, a Readwise sync worker that pulls highlights into the inbox, a one-shot Notion importer at `/import/notion` that converts pages to typed notes with bulk re-typing and mention-to-wikilink rewriting, a Manuscript editor with transclusion/copy sections, manuscript export to Markdown, LaTeX, and DOCX (via Pandoc), a mobile PWA at `/m/` with offline capture, a local ML embedding pipeline (FastAPI + sentence-transformers + pgvector), and a `/ask` RAG interface backed by a local Ollama LLM.
 
 ## Mobile
 
@@ -63,6 +63,38 @@ The worker polls every 60s for notes that need (re-)embedding and writes 768-dim
 ### Embedding status
 
 The nav shows a live "ML X/Y" badge (polls every 30s from `/api/ml/embedding-status`). Amber = stale embeddings pending, green = all up to date.
+
+## Ollama (local LLM for /ask)
+
+The `/ask` page uses a local [Ollama](https://ollama.com/) instance for RAG-based Q&A over your notes. Ollama must be running separately — it is not included in `docker-compose.yml`.
+
+### Setup
+
+```bash
+# Install Ollama from https://ollama.com
+brew install ollama          # macOS via Homebrew
+ollama serve                 # starts on http://localhost:11434
+
+# Pull the recommended model
+ollama pull qwen2.5:7b-instruct
+```
+
+### How it works
+
+1. Your question is embedded via the ML service (same model as search).
+2. Top-12 similar notes are retrieved by cosine distance from pgvector.
+3. The notes + question are sent to Ollama with a citation-enforcement prompt.
+4. The answer streams back via SSE. Citations appear as `[[Note Title]]` links.
+5. The "Draft as permanent note" button rewrites the Q&A as a single atomic claim.
+
+### Configuration
+
+| Env var | Default | Description |
+|---|---|---|
+| `OLLAMA_URL` | `http://localhost:11434` | Ollama base URL |
+| `OLLAMA_MODEL` | `qwen2.5:7b-instruct` | Model to use |
+
+If Ollama is not running, the `/api/ask` and `/api/ask/draft` endpoints return `503 Ollama not available`. The rest of the app is unaffected.
 
 ### Python tests
 

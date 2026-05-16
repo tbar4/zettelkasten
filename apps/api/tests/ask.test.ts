@@ -79,7 +79,7 @@ async function setAvailable(available: boolean) {
   // Patch global fetch for the /api/tags check
   const orig = globalThis.fetch;
   let called = false;
-  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url;
     if (!called && url.includes("/api/tags")) {
       called = true;
