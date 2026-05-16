@@ -20,7 +20,8 @@ export const NewNoteLinkSchema = z
     from_note_id: z.string().uuid(),
     to_note_id: z.string().uuid(),
     link_type: LinkType.default("references"),
-    context: z.string().optional()
+    context: z.string().optional(),
+    custom_link_type_id: z.string().uuid().optional()
   })
   .refine((data) => data.from_note_id !== data.to_note_id, {
     message: "from_note_id and to_note_id must differ",
@@ -35,6 +36,8 @@ export const NoteLinkSchema = z.object({
   link_type: LinkType,
   context: z.string().nullable(),
   source: LinkSource,
+  custom_link_type_id: z.string().uuid().nullable(),
+  custom_link_type_name: z.string().nullable(),
   created_at: z.string().datetime()
 });
 export type NoteLink = z.infer<typeof NoteLinkSchema>;

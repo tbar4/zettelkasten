@@ -21,6 +21,9 @@ function Root() {
         <Link to="/import/notion" style={{ fontSize: 14, color: "#7aa2f7" }}>
           Import
         </Link>
+        <Link to="/settings/link-types" style={{ fontSize: 14, color: "#7aa2f7" }}>
+          Link Types
+        </Link>
         <span style={{ marginLeft: "auto", fontSize: 12, color: "#666" }}>
           ⌘K to search
         </span>

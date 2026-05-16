@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsLinkTypesRouteImport } from './routes/settings.link-types'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as ImportNotionRouteImport } from './routes/import.notion'
 
@@ -28,6 +29,11 @@ const GraphRoute = GraphRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsLinkTypesRoute = SettingsLinkTypesRouteImport.update({
+  id: '/settings/link-types',
+  path: '/settings/link-types',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof InboxRoute
   '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/settings/link-types': typeof SettingsLinkTypesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof InboxRoute
   '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/settings/link-types': typeof SettingsLinkTypesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,25 @@ export interface FileRoutesById {
   '/inbox': typeof InboxRoute
   '/import/notion': typeof ImportNotionRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/settings/link-types': typeof SettingsLinkTypesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/graph' | '/inbox' | '/import/notion' | '/notes/$noteId'
+  fullPaths:
+    | '/'
+    | '/graph'
+    | '/inbox'
+    | '/import/notion'
+    | '/notes/$noteId'
+    | '/settings/link-types'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/graph' | '/inbox' | '/import/notion' | '/notes/$noteId'
+  to:
+    | '/'
+    | '/graph'
+    | '/inbox'
+    | '/import/notion'
+    | '/notes/$noteId'
+    | '/settings/link-types'
   id:
     | '__root__'
     | '/'
@@ -75,6 +96,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/import/notion'
     | '/notes/$noteId'
+    | '/settings/link-types'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +105,7 @@ export interface RootRouteChildren {
   InboxRoute: typeof InboxRoute
   ImportNotionRoute: typeof ImportNotionRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
+  SettingsLinkTypesRoute: typeof SettingsLinkTypesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -108,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/link-types': {
+      id: '/settings/link-types'
+      path: '/settings/link-types'
+      fullPath: '/settings/link-types'
+      preLoaderRoute: typeof SettingsLinkTypesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notes/$noteId': {
       id: '/notes/$noteId'
       path: '/notes/$noteId'
@@ -131,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   InboxRoute: InboxRoute,
   ImportNotionRoute: ImportNotionRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
+  SettingsLinkTypesRoute: SettingsLinkTypesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

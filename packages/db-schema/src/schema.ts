@@ -9,7 +9,8 @@ import {
   primaryKey,
   check,
   customType,
-  integer
+  integer,
+  boolean
 } from "drizzle-orm/pg-core";
 import { sql, relations } from "drizzle-orm";
 
@@ -69,6 +70,21 @@ export const notes = pgTable(
   ]
 );
 
+export const customLinkTypes = pgTable(
+  "custom_link_type",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull().unique(),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (t) => [
+    check("custom_link_type_name_not_empty", sql`length(${t.name}) > 0`)
+  ]
+);
+
 export const noteLinks = pgTable(
   "note_link",
   {
@@ -82,6 +98,10 @@ export const noteLinks = pgTable(
     linkType: linkTypeEnum("link_type").notNull().default("references"),
     context: text("context"),
     source: linkSourceEnum("source").notNull().default("manual"),
+    customLinkTypeId: uuid("custom_link_type_id").references(
+      () => customLinkTypes.id,
+      { onDelete: "set null" }
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull()
@@ -90,6 +110,7 @@ export const noteLinks = pgTable(
     uniqueIndex("note_link_unique").on(t.fromNoteId, t.toNoteId, t.linkType),
     index("note_link_from_idx").on(t.fromNoteId),
     index("note_link_to_idx").on(t.toNoteId),
+    index("note_link_custom_type_idx").on(t.customLinkTypeId),
     check("note_link_not_self", sql`${t.fromNoteId} <> ${t.toNoteId}`)
   ]
 );
@@ -223,4 +244,107 @@ export const noteSources = pgTable(
       .references(() => sources.id, { onDelete: "cascade" })
   },
   (t) => [primaryKey({ columns: [t.noteId, t.sourceId] })]
+);
+
+export const canvases = pgTable("canvas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  topicNoteId: uuid("topic_note_id")
+    .notNull()
+    .unique()
+    .references(() => notes.id, { onDelete: "cascade" }),
+  sceneData: text("scene_data"),
+  viewport: text("viewport"),
+  theme: text("theme"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull()
+});
+
+export const canvasItems = pgTable(
+  "canvas_item",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    canvasId: uuid("canvas_id")
+      .notNull()
+      .references(() => canvases.id, { onDelete: "cascade" }),
+    noteId: uuid("note_id")
+      .notNull()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    x: integer("x").notNull(),
+    y: integer("y").notNull(),
+    width: integer("width").notNull().default(200),
+    height: integer("height").notNull().default(120),
+    color: text("color"),
+    zIndex: integer("z_index").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (t) => [
+    index("canvas_item_canvas_idx").on(t.canvasId),
+    index("canvas_item_note_idx").on(t.noteId)
+  ]
+);
+
+export const canvasEdges = pgTable(
+  "canvas_edge",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    canvasId: uuid("canvas_id")
+      .notNull()
+      .references(() => canvases.id, { onDelete: "cascade" }),
+    fromItemId: uuid("from_item_id")
+      .notNull()
+      .references(() => canvasItems.id, { onDelete: "cascade" }),
+    toItemId: uuid("to_item_id")
+      .notNull()
+      .references(() => canvasItems.id, { onDelete: "cascade" }),
+    label: text("label"),
+    color: text("color"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (t) => [
+    index("canvas_edge_canvas_idx").on(t.canvasId),
+    check("canvas_edge_not_self", sql`${t.fromItemId} <> ${t.toItemId}`)
+  ]
+);
+
+export const manuscripts = pgTable("manuscript", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  anchorTopicIds: uuid("anchor_topic_ids").array().notNull().default(sql`'{}'::uuid[]`),
+  bodyMd: text("body_md"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull()
+});
+
+export const manuscriptSections = pgTable(
+  "manuscript_section",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    manuscriptId: uuid("manuscript_id")
+      .notNull()
+      .references(() => manuscripts.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    noteId: uuid("note_id").references(() => notes.id, { onDelete: "set null" }),
+    isTransclusion: boolean("is_transclusion").notNull().default(true),
+    frozenBodyMd: text("frozen_body_md"),
+    heading: text("heading"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (t) => [
+    index("manuscript_section_manuscript_idx").on(t.manuscriptId),
+    index("manuscript_section_position_idx").on(t.manuscriptId, t.position)
+  ]
 );
