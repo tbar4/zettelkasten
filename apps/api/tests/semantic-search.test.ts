@@ -237,4 +237,32 @@ describe("GET /api/notes/:id/related", () => {
     const body = (await res.json()) as { results: { id: string }[] };
     expect(body.results.find((r) => r.id === idB)).toBeUndefined();
   });
+
+  it("returns usingReranker: false when feedback count < 30", async () => {
+    setMlClient(mockMlClient(vecA));
+    const idA = await insertNote("Note A");
+    const idB = await insertNote("Note B");
+    await insertEmbedding(idA, vecA);
+    await insertEmbedding(idB, vecB);
+
+    const res = await app.request(`/api/notes/${idA}/related`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { results: unknown[]; usingReranker: boolean };
+    // Cold-start: table is empty so usingReranker should be false
+    expect(body.usingReranker).toBe(false);
+  });
+});
+
+describe("GET /api/search/semantic — usingReranker field", () => {
+  afterAll(() => {
+    setMlClient(null);
+  });
+
+  it("returns usingReranker: false in cold-start (< 30 feedback rows)", async () => {
+    setMlClient(mockMlClient(makeVector(0.001)));
+    const res = await app.request("/api/search/semantic?q=test");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { results: unknown[]; usingReranker: boolean };
+    expect(body.usingReranker).toBe(false);
+  });
 });
