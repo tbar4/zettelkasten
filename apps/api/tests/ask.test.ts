@@ -61,7 +61,9 @@ function mockMlClient(vec: number[]): MLClient {
   return {
     async embed(_texts: string[]) { return { vectors: [vec], modelVersion: "test" }; },
     async rerank(features: number[][]) { return { scores: features.map(() => 0.5) }; },
-    async trainReranker(_features, _labels) { return { trained: 0, loss: 0 }; }
+    async trainReranker(_features, _labels) { return { trained: 0, loss: 0 }; },
+    async scoreHighlights(features) { return { scores: features.map(() => 0.5) }; },
+    async trainClassifier(_features, _labels) { return { trained: 0, noop: true }; }
   };
 }
 
@@ -69,7 +71,9 @@ function failingMlClient(): MLClient {
   return {
     async embed(_texts: string[]) { throw new Error("ML down"); },
     async rerank(_features) { throw new Error("ML down"); },
-    async trainReranker(_features, _labels) { throw new Error("ML down"); }
+    async trainReranker(_features, _labels) { throw new Error("ML down"); },
+    async scoreHighlights(_features) { throw new Error("ML down"); },
+    async trainClassifier(_features, _labels) { throw new Error("ML down"); }
   };
 }
 

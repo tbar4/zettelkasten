@@ -128,9 +128,40 @@ export const api = {
   getInbox(): Promise<{
     due: { id: string; title: string; type: string; next_due_at: string }[];
     fleeting: { id: string; title: string; type: string }[];
-    highlights: { id: string; text: string; source_title: string }[];
+    highlights: {
+      id: string;
+      text: string;
+      source_title: string;
+      source_id: string;
+      promotion_score: number | null;
+    }[];
   }> {
     return request("/api/inbox", { method: "GET" });
+  },
+
+  recordHighlightFeedback(params: {
+    highlightId: string;
+    action: "promoted" | "edited" | "rejected";
+    draftText?: string;
+    finalText?: string;
+  }): Promise<{ count: number }> {
+    return request("/api/highlight-feedback", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(params)
+    });
+  },
+
+  getInboxReview(): Promise<{
+    review: {
+      id: string;
+      title: string;
+      type: string;
+      next_due_at: string | null;
+      hybrid_score: number;
+    }[];
+  }> {
+    return request("/api/inbox/review", { method: "GET" });
   },
 
   postReview(

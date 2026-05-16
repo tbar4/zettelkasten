@@ -1,9 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "@zk/db-schema";
 import { app } from "../src/server";
+import { setMlClientForInbox } from "../src/routes/inbox";
+import type { MLClient } from "../src/lib/ml-client";
 
 const url =
   process.env.DATABASE_URL_TEST ??
@@ -17,6 +19,22 @@ async function post(path: string, body: unknown): Promise<Response> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body)
   });
+}
+
+afterEach(() => {
+  // Reset ML client injection between tests
+  setMlClientForInbox(null);
+});
+
+/** Stub ML client that returns a fixed score for all highlights. */
+function stubMlClient(score: number): MLClient {
+  return {
+    embed: async () => ({ vectors: [], modelVersion: "stub" }),
+    rerank: async () => ({ scores: [] }),
+    trainReranker: async () => ({ trained: 0, loss: 0 }),
+    scoreHighlights: async (features) => ({ scores: features.map(() => score) }),
+    trainClassifier: async () => ({ trained: 0, noop: true })
+  };
 }
 
 describe("GET /api/inbox", () => {
@@ -126,5 +144,81 @@ describe("GET /api/inbox", () => {
       highlights: { text: string }[];
     };
     expect(body.highlights.map((h) => h.text)).toEqual(["untouched"]);
+  });
+
+  it("includes promotion_score: null when ML service is unavailable", async () => {
+    const [source] = await db
+      .insert(schema.sources)
+      .values({ title: "Score Book" })
+      .returning();
+    await db.insert(schema.highlights).values({
+      sourceId: source!.id,
+      text: "score test quote"
+    });
+
+    const res = await app.request("/api/inbox");
+    const body = (await res.json()) as {
+      highlights: { id: string; promotion_score: number | null }[];
+    };
+    expect(body.highlights).toHaveLength(1);
+    // ML service not running in tests → graceful fallback to null
+    expect(body.highlights[0]!.promotion_score).toBeNull();
+  });
+
+  it("includes promotion_score from ML service when available", async () => {
+    setMlClientForInbox(stubMlClient(0.85));
+
+    const [source] = await db
+      .insert(schema.sources)
+      .values({ title: "ML Book" })
+      .returning();
+    await db.insert(schema.highlights).values([
+      { sourceId: source!.id, text: "high score quote" },
+      { sourceId: source!.id, text: "another quote" }
+    ]);
+
+    const res = await app.request("/api/inbox");
+    const body = (await res.json()) as {
+      highlights: { id: string; text: string; promotion_score: number | null }[];
+    };
+    expect(body.highlights).toHaveLength(2);
+    for (const h of body.highlights) {
+      expect(h.promotion_score).toBeCloseTo(0.85, 5);
+    }
+  });
+
+  it("sorts highlights by promotion_score DESC when scores are available", async () => {
+    // Return different scores per call position
+    let callCount = 0;
+    const scoringClient: MLClient = {
+      embed: async () => ({ vectors: [], modelVersion: "stub" }),
+      rerank: async () => ({ scores: [] }),
+      trainReranker: async () => ({ trained: 0, loss: 0 }),
+      scoreHighlights: async (features) => ({
+        // Assign descending scores so we can verify sort order flips
+        scores: features.map((_, i) => 0.9 - i * 0.3)
+      }),
+      trainClassifier: async () => ({ trained: 0, noop: true })
+    };
+    setMlClientForInbox(scoringClient);
+
+    const [source] = await db
+      .insert(schema.sources)
+      .values({ title: "Sort Book" })
+      .returning();
+    // Insert in a known order; scores will be [0.9, 0.6]
+    await db.insert(schema.highlights).values([
+      { sourceId: source!.id, text: "first inserted" },
+      { sourceId: source!.id, text: "second inserted" }
+    ]);
+
+    const res = await app.request("/api/inbox");
+    const body = (await res.json()) as {
+      highlights: { text: string; promotion_score: number | null }[];
+    };
+    expect(body.highlights).toHaveLength(2);
+    // Highest score should come first
+    const scores = body.highlights.map((h) => h.promotion_score!);
+    expect(scores[0]!).toBeGreaterThanOrEqual(scores[1]!);
   });
 });

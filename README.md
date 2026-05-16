@@ -6,7 +6,19 @@ See [`docs/superpowers/specs/2026-05-15-zettelkasten-app-design.md`](docs/superp
 
 ## Current status
 
-**M1 + M2 + M3 Plans 1–4 complete.** The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a backlinks panel with note titles, inline tag editing, a ⌘K command palette over Postgres FTS, a Sigma.js graph view at `/graph`, a triage inbox at `/inbox` with spaced-repetition daily review, fleeting-note promotion, and Readwise-highlight promotion, a markdown mirror worker that writes every note to `~/Notes/zettel/` with git auto-commits, a Readwise sync worker that pulls highlights into the inbox, a one-shot Notion importer at `/import/notion` that converts pages to typed notes with bulk re-typing and mention-to-wikilink rewriting, a Manuscript editor with transclusion/copy sections, manuscript export to Markdown, LaTeX, and DOCX (via Pandoc), a mobile PWA at `/m/` with offline capture, a local ML embedding pipeline (FastAPI + sentence-transformers + pgvector), and a `/ask` RAG interface backed by a local Ollama LLM.
+**M3 FEATURE-COMPLETE.** All three milestones are done. The stack supports:
+
+- **Notes + graph:** note + link + tag CRUD, CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete, backlinks panel, inline tag editing, ⌘K command palette over Postgres FTS, Sigma.js graph view at `/graph`.
+- **Inbox + review:** Triage inbox at `/inbox` with ML-driven daily review (hybrid score = time-decay + embedding distance to recently-edited notes), fleeting-note promotion, and Readwise-highlight promotion with XGBoost promotion-score confidence chips.
+- **Workers:** Markdown mirror worker (`~/Notes/zettel/` + git), Readwise sync worker, embedding worker (sentence-transformers + pgvector).
+- **Import/export:** One-shot Notion importer, Manuscript editor with transclusion/copy sections, export to Markdown/LaTeX/DOCX (Pandoc).
+- **Mobile:** PWA at `/m/` with offline IndexedDB capture queue.
+- **ML pipeline (local, no cloud):**
+  - Embedding service (FastAPI + nomic-embed-text-v1.5, 768-dim, Apple Silicon / CPU).
+  - Semantic search + RAG `/ask` (pgvector cosine distance + Ollama LLM).
+  - MLP re-ranker (PyTorch, 5-dim features) trained on suggestion-feedback events.
+  - XGBoost highlight classifier (5-dim features) trained on promotion-feedback events; shows confidence chip in inbox.
+  - ML-driven daily review ranking (`/api/inbox/review`): hybrid score replaces pure time-decay.
 
 ## Mobile
 
@@ -37,7 +49,15 @@ pnpm dev:embedding-worker               # embedding worker (optional — require
 
 ## ML service
 
-The embedding pipeline runs a local Python FastAPI service (`apps/ml/`) using `nomic-embed-text-v1.5` (768-dim) via sentence-transformers.
+The local Python FastAPI service (`apps/ml/`) provides:
+
+| Endpoint | Description |
+|---|---|
+| `POST /embed` | Text → 768-dim vectors (nomic-embed-text-v1.5) |
+| `POST /rerank` | 5-dim feature vectors → MLP re-ranker scores |
+| `POST /train-reranker` | One SGD step on suggestion-feedback data |
+| `POST /score-highlights` | 5-dim feature vectors → XGBoost promotion-score |
+| `POST /train-classifier` | Retrain XGBoost on promotion-feedback data (no-op if < 50 events) |
 
 **This service is intentionally not in `docker-compose.yml`** — it needs Metal/GPU access on Apple Silicon and must run natively.
 
@@ -45,10 +65,31 @@ The embedding pipeline runs a local Python FastAPI service (`apps/ml/`) using `n
 
 ```bash
 cd apps/ml
+
+# Create a virtual environment (recommended)
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies (includes sentence-transformers, torch, xgboost, scikit-learn)
 pip install -e ".[dev]"
-# First run downloads ~270 MB model from HuggingFace
+
+# First run downloads ~270 MB nomic-embed-text-v1.5 model from HuggingFace
 uvicorn src.main:app --port 8000 --reload
 ```
+
+### Model persistence
+
+Trained models are written to `apps/ml/data/`:
+- `reranker.pt` — MLP re-ranker weights (PyTorch)
+- `classifier.pkl` — XGBoost classifier (pickle)
+
+Both files are gitignored. Cold-start behavior: re-ranker returns 0.5, classifier returns 0.5.
+
+### Retrain endpoints
+
+The re-ranker and classifier are retrained automatically via API hooks:
+- Re-ranker: `POST /api/ml/retrain-reranker` — called by suggestion-feedback flows
+- Classifier: `POST /train-classifier` on the ML service — call after accumulating ≥ 50 promote/reject events
 
 ### Running the embedding worker
 
@@ -93,18 +134,22 @@ ollama pull qwen2.5:7b-instruct
 |---|---|---|
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama base URL |
 | `OLLAMA_MODEL` | `qwen2.5:7b-instruct` | Model to use |
+| `ML_SERVICE_URL` | `http://localhost:8000` | ML service base URL |
+| `RERANKER_MODEL_PATH` | `apps/ml/data/reranker.pt` | Re-ranker weight path |
+| `CLASSIFIER_MODEL_PATH` | `apps/ml/data/classifier.pkl` | XGBoost classifier path |
 
-If Ollama is not running, the `/api/ask` and `/api/ask/draft` endpoints return `503 Ollama not available`. The rest of the app is unaffected.
+If Ollama is not running, the `/api/ask` and `/api/ask/draft` endpoints return `503 Ollama not available`. The rest of the app is unaffected. If the ML service is not running, all ML features degrade gracefully (0.5 scores, natural ordering).
 
 ### Python tests
 
 ```bash
 cd apps/ml
+source .venv/bin/activate  # if using venv
 pip install -e ".[dev]"
 pytest
 ```
 
-Tests monkeypatch `SentenceTransformerModel` — no model download needed.
+Tests monkeypatch model loading — no model download needed. XGBoost trains in microseconds on small test matrices.
 
 ## Tests
 

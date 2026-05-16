@@ -10,6 +10,11 @@ export interface MLClient {
     features: number[][],
     labels: number[]
   ): Promise<{ trained: number; loss: number }>;
+  scoreHighlights(features: number[][]): Promise<{ scores: number[] }>;
+  trainClassifier(
+    features: number[][],
+    labels: number[]
+  ): Promise<{ trained: number; noop: boolean }>;
 }
 
 export function httpMlClient(baseUrl: string): MLClient {
@@ -48,6 +53,30 @@ export function httpMlClient(baseUrl: string): MLClient {
         throw new Error(`ML service error: ${res.status} ${res.statusText}`);
       }
       return (await res.json()) as { trained: number; loss: number };
+    },
+
+    async scoreHighlights(features: number[][]) {
+      const res = await fetch(`${baseUrl}/score-highlights`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ features })
+      });
+      if (!res.ok) {
+        throw new Error(`ML service error: ${res.status} ${res.statusText}`);
+      }
+      return (await res.json()) as { scores: number[] };
+    },
+
+    async trainClassifier(features: number[][], labels: number[]) {
+      const res = await fetch(`${baseUrl}/train-classifier`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ features, labels })
+      });
+      if (!res.ok) {
+        throw new Error(`ML service error: ${res.status} ${res.statusText}`);
+      }
+      return (await res.json()) as { trained: number; noop: boolean };
     }
   };
 }
