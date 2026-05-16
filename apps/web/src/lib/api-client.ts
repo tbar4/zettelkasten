@@ -87,6 +87,24 @@ export const api = {
     return request(`/api/notes/${id}/links`, { method: "GET" });
   },
 
+  createLink(input: {
+    from_note_id: string;
+    to_note_id: string;
+    link_type?: string;
+    context?: string;
+    custom_link_type_id?: string;
+  }): Promise<NoteLink> {
+    return request("/api/links", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
+  },
+
+  deleteLink(id: string): Promise<void> {
+    return request(`/api/links/${id}`, { method: "DELETE" });
+  },
+
   setNoteTags(noteId: string, tagNames: string[]): Promise<{ tags: string[] }> {
     return request(`/api/notes/${noteId}/tags`, {
       method: "PUT",
