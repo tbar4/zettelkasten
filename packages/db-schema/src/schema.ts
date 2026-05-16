@@ -396,3 +396,26 @@ export const suggestionFeedback = pgTable(
     )
   ]
 );
+
+export const highlightPromotionFeedback = pgTable(
+  "highlight_promotion_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    highlightId: uuid("highlight_id").references(() => highlights.id, {
+      onDelete: "cascade"
+    }),
+    action: text("action").notNull(),
+    draftText: text("draft_text"),
+    finalText: text("final_text"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (t) => [
+    index("highlight_promotion_feedback_h_idx").on(t.highlightId),
+    check(
+      "highlight_promotion_feedback_action_check",
+      sql`${t.action} IN ('promoted', 'edited', 'rejected')`
+    )
+  ]
+);
