@@ -62,6 +62,9 @@ function Root() {
         <Link to="/inbox" style={{ fontSize: 14, color: "#7aa2f7" }}>
           Inbox
         </Link>
+        <Link to="/ask" style={{ fontSize: 14, color: "#7aa2f7" }}>
+          Ask
+        </Link>
         <Link to="/graph" style={{ fontSize: 14, color: "#7aa2f7" }}>
           Graph
         </Link>

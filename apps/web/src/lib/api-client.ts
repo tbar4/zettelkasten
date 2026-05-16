@@ -468,6 +468,67 @@ export const api = {
   }> {
     const qs = new URLSearchParams({ limit: String(limit) }).toString();
     return request(`/api/notes/${noteId}/related?${qs}`, { method: "GET" });
+  },
+
+  /**
+   * POST /api/ask — sends a question and consumes the SSE stream.
+   * Yields typed AskEvent objects: citations → tokens → done/error.
+   */
+  async *ask(
+    question: string,
+    opts: { k?: number } = {}
+  ): AsyncIterable<AskEvent> {
+    const res = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ question, ...(opts.k !== undefined ? { k: opts.k } : {}) })
+    });
+
+    if (!res.ok) {
+      let message = `${res.status} ${res.statusText}`;
+      try {
+        const body = (await res.json()) as { error?: string };
+        if (body.error) message = body.error;
+      } catch {
+        /* fall through */
+      }
+      throw new Error(message);
+    }
+
+    if (!res.body) throw new Error("No response body from /api/ask");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop()!;
+      for (const p of parts) {
+        const dataLine = p.split("\n").find((l) => l.startsWith("data: "));
+        if (dataLine) {
+          yield JSON.parse(dataLine.slice(6)) as AskEvent;
+        }
+      }
+    }
+  },
+
+  /**
+   * POST /api/ask/draft — generates a permanent-note draft (non-streaming).
+   */
+  askDraft(input: {
+    question: string;
+    answer: string;
+    citedNoteIds: string[];
+  }): Promise<{ draft: string }> {
+    return request("/api/ask/draft", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
   }
 };
 
@@ -493,3 +554,16 @@ export type ManuscriptDetail = {
   updated_at: string;
   sections: ManuscriptSection[];
 };
+
+export type AskCitationNote = {
+  id: string;
+  title: string;
+  type: string;
+  similarity: number;
+};
+
+export type AskEvent =
+  | { type: "citations"; notes: AskCitationNote[] }
+  | { type: "token"; value: string }
+  | { type: "done" }
+  | { type: "error"; message: string };
