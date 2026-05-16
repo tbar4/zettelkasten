@@ -5,7 +5,7 @@
     "outDir": "dist",
     "jsx": "react-jsx",
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "vite-plugin-pwa/client"]
   },
   "include": ["src/**/*", "tests/**/*", "vite.config.ts"],
   "references": [{ "path": "../../packages/shared" }]

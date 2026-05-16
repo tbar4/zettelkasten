@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ManuscriptsRouteImport } from './routes/manuscripts'
+import { Route as MRouteImport } from './routes/m'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,12 +18,19 @@ import { Route as ManuscriptsIndexRouteImport } from './routes/manuscripts.index
 import { Route as SettingsLinkTypesRouteImport } from './routes/settings.link-types'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as ManuscriptsManuscriptIdRouteImport } from './routes/manuscripts.$manuscriptId'
+import { Route as MInboxRouteImport } from './routes/m.inbox'
+import { Route as MCaptureRouteImport } from './routes/m.capture'
 import { Route as ImportNotionRouteImport } from './routes/import.notion'
 import { Route as TopicsNoteIdCanvasRouteImport } from './routes/topics.$noteId.canvas'
 
 const ManuscriptsRoute = ManuscriptsRouteImport.update({
   id: '/manuscripts',
   path: '/manuscripts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MRoute = MRouteImport.update({
+  id: '/m',
+  path: '/m',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InboxRoute = InboxRouteImport.update({
@@ -60,6 +68,16 @@ const ManuscriptsManuscriptIdRoute = ManuscriptsManuscriptIdRouteImport.update({
   path: '/$manuscriptId',
   getParentRoute: () => ManuscriptsRoute,
 } as any)
+const MInboxRoute = MInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => MRoute,
+} as any)
+const MCaptureRoute = MCaptureRouteImport.update({
+  id: '/capture',
+  path: '/capture',
+  getParentRoute: () => MRoute,
+} as any)
 const ImportNotionRoute = ImportNotionRouteImport.update({
   id: '/import/notion',
   path: '/import/notion',
@@ -75,8 +93,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
+  '/m': typeof MRouteWithChildren
   '/manuscripts': typeof ManuscriptsRouteWithChildren
   '/import/notion': typeof ImportNotionRoute
+  '/m/capture': typeof MCaptureRoute
+  '/m/inbox': typeof MInboxRoute
   '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
@@ -87,7 +108,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
+  '/m': typeof MRouteWithChildren
   '/import/notion': typeof ImportNotionRoute
+  '/m/capture': typeof MCaptureRoute
+  '/m/inbox': typeof MInboxRoute
   '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
@@ -99,8 +123,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
+  '/m': typeof MRouteWithChildren
   '/manuscripts': typeof ManuscriptsRouteWithChildren
   '/import/notion': typeof ImportNotionRoute
+  '/m/capture': typeof MCaptureRoute
+  '/m/inbox': typeof MInboxRoute
   '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
@@ -113,8 +140,11 @@ export interface FileRouteTypes {
     | '/'
     | '/graph'
     | '/inbox'
+    | '/m'
     | '/manuscripts'
     | '/import/notion'
+    | '/m/capture'
+    | '/m/inbox'
     | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
@@ -125,7 +155,10 @@ export interface FileRouteTypes {
     | '/'
     | '/graph'
     | '/inbox'
+    | '/m'
     | '/import/notion'
+    | '/m/capture'
+    | '/m/inbox'
     | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
@@ -136,8 +169,11 @@ export interface FileRouteTypes {
     | '/'
     | '/graph'
     | '/inbox'
+    | '/m'
     | '/manuscripts'
     | '/import/notion'
+    | '/m/capture'
+    | '/m/inbox'
     | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
@@ -149,6 +185,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GraphRoute: typeof GraphRoute
   InboxRoute: typeof InboxRoute
+  MRoute: typeof MRouteWithChildren
   ManuscriptsRoute: typeof ManuscriptsRouteWithChildren
   ImportNotionRoute: typeof ImportNotionRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
@@ -163,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/manuscripts'
       fullPath: '/manuscripts'
       preLoaderRoute: typeof ManuscriptsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/m': {
+      id: '/m'
+      path: '/m'
+      fullPath: '/m'
+      preLoaderRoute: typeof MRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inbox': {
@@ -214,6 +258,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManuscriptsManuscriptIdRouteImport
       parentRoute: typeof ManuscriptsRoute
     }
+    '/m/inbox': {
+      id: '/m/inbox'
+      path: '/inbox'
+      fullPath: '/m/inbox'
+      preLoaderRoute: typeof MInboxRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/capture': {
+      id: '/m/capture'
+      path: '/capture'
+      fullPath: '/m/capture'
+      preLoaderRoute: typeof MCaptureRouteImport
+      parentRoute: typeof MRoute
+    }
     '/import/notion': {
       id: '/import/notion'
       path: '/import/notion'
@@ -230,6 +288,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface MRouteChildren {
+  MCaptureRoute: typeof MCaptureRoute
+  MInboxRoute: typeof MInboxRoute
+}
+
+const MRouteChildren: MRouteChildren = {
+  MCaptureRoute: MCaptureRoute,
+  MInboxRoute: MInboxRoute,
+}
+
+const MRouteWithChildren = MRoute._addFileChildren(MRouteChildren)
 
 interface ManuscriptsRouteChildren {
   ManuscriptsManuscriptIdRoute: typeof ManuscriptsManuscriptIdRoute
@@ -249,6 +319,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GraphRoute: GraphRoute,
   InboxRoute: InboxRoute,
+  MRoute: MRouteWithChildren,
   ManuscriptsRoute: ManuscriptsRouteWithChildren,
   ImportNotionRoute: ImportNotionRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,

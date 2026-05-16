@@ -6,7 +6,16 @@ See [`docs/superpowers/specs/2026-05-15-zettelkasten-app-design.md`](docs/superp
 
 ## Current status
 
-**M1 + M2 Plans 1–4 complete.** The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a backlinks panel with note titles, inline tag editing, a ⌘K command palette over Postgres FTS, a Sigma.js graph view at `/graph`, a triage inbox at `/inbox` with spaced-repetition daily review, fleeting-note promotion, and Readwise-highlight promotion, a markdown mirror worker that writes every note to `~/Notes/zettel/` with git auto-commits, a Readwise sync worker that pulls highlights into the inbox, a one-shot Notion importer at `/import/notion` that converts pages to typed notes with bulk re-typing and mention-to-wikilink rewriting, a Manuscript editor with transclusion/copy sections, and manuscript export to Markdown, LaTeX, and DOCX (via Pandoc).
+**M1 + M2 Plans 1–5 complete.** The stack supports note + link + tag CRUD, a CodeMirror 6 markdown editor with `[[wikilink]]` autocomplete and decoration, a backlinks panel with note titles, inline tag editing, a ⌘K command palette over Postgres FTS, a Sigma.js graph view at `/graph`, a triage inbox at `/inbox` with spaced-repetition daily review, fleeting-note promotion, and Readwise-highlight promotion, a markdown mirror worker that writes every note to `~/Notes/zettel/` with git auto-commits, a Readwise sync worker that pulls highlights into the inbox, a one-shot Notion importer at `/import/notion` that converts pages to typed notes with bulk re-typing and mention-to-wikilink rewriting, a Manuscript editor with transclusion/copy sections, manuscript export to Markdown, LaTeX, and DOCX (via Pandoc), and a mobile PWA at `/m/` with offline capture.
+
+## Mobile
+
+The app is installable as a PWA (Chrome/Safari on iOS/Android, or desktop Chrome). After installing, it opens to `/m/capture`.
+
+- **`/m/capture`** — Full-screen mobile capture: type a thought and tap Save. If you're offline (or the request fails), the note is queued in IndexedDB. The queue flushes automatically every 30 seconds and whenever the device comes back online.
+- **`/m/inbox`** — Mobile triage inbox: fleeting notes and Readwise highlights, tap to expand and act (promote / archive). Actions open the desktop editor in a new tab.
+
+The mobile shell (`/m/`) renders a bottom tab bar (Capture / Inbox) and suppresses the desktop nav header. Offline writes are handled by an IndexedDB outbox (`idb` library, `zk-outbox` database).
 
 ## Setup
 

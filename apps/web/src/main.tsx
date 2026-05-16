@@ -2,9 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { registerSW } from "virtual:pwa-register";
 import { queryClient } from "./lib/query-client";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
+
+registerSW({ immediate: true });
 
 const router = createRouter({ routeTree });
 
