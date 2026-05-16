@@ -15,6 +15,7 @@ import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ManuscriptsIndexRouteImport } from './routes/manuscripts.index'
+import { Route as SettingsSourcesRouteImport } from './routes/settings.sources'
 import { Route as SettingsLinkTypesRouteImport } from './routes/settings.link-types'
 import { Route as NotesNoteIdRouteImport } from './routes/notes.$noteId'
 import { Route as ManuscriptsManuscriptIdRouteImport } from './routes/manuscripts.$manuscriptId'
@@ -52,6 +53,11 @@ const ManuscriptsIndexRoute = ManuscriptsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ManuscriptsRoute,
+} as any)
+const SettingsSourcesRoute = SettingsSourcesRouteImport.update({
+  id: '/settings/sources',
+  path: '/settings/sources',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsLinkTypesRoute = SettingsLinkTypesRouteImport.update({
   id: '/settings/link-types',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/settings/sources': typeof SettingsSourcesRoute
   '/manuscripts/': typeof ManuscriptsIndexRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/settings/sources': typeof SettingsSourcesRoute
   '/manuscripts': typeof ManuscriptsIndexRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/manuscripts/$manuscriptId': typeof ManuscriptsManuscriptIdRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/settings/link-types': typeof SettingsLinkTypesRoute
+  '/settings/sources': typeof SettingsSourcesRoute
   '/manuscripts/': typeof ManuscriptsIndexRoute
   '/topics/$noteId/canvas': typeof TopicsNoteIdCanvasRoute
 }
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/settings/sources'
     | '/manuscripts/'
     | '/topics/$noteId/canvas'
   fileRoutesByTo: FileRoutesByTo
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/settings/sources'
     | '/manuscripts'
     | '/topics/$noteId/canvas'
   id:
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/manuscripts/$manuscriptId'
     | '/notes/$noteId'
     | '/settings/link-types'
+    | '/settings/sources'
     | '/manuscripts/'
     | '/topics/$noteId/canvas'
   fileRoutesById: FileRoutesById
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   ImportNotionRoute: typeof ImportNotionRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
   SettingsLinkTypesRoute: typeof SettingsLinkTypesRoute
+  SettingsSourcesRoute: typeof SettingsSourcesRoute
   TopicsNoteIdCanvasRoute: typeof TopicsNoteIdCanvasRoute
 }
 
@@ -236,6 +249,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/manuscripts/'
       preLoaderRoute: typeof ManuscriptsIndexRouteImport
       parentRoute: typeof ManuscriptsRoute
+    }
+    '/settings/sources': {
+      id: '/settings/sources'
+      path: '/settings/sources'
+      fullPath: '/settings/sources'
+      preLoaderRoute: typeof SettingsSourcesRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/settings/link-types': {
       id: '/settings/link-types'
@@ -324,6 +344,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImportNotionRoute: ImportNotionRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
   SettingsLinkTypesRoute: SettingsLinkTypesRoute,
+  SettingsSourcesRoute: SettingsSourcesRoute,
   TopicsNoteIdCanvasRoute: TopicsNoteIdCanvasRoute,
 }
 export const routeTree = rootRouteImport

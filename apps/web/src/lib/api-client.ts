@@ -434,6 +434,14 @@ export const api = {
 
   manuscriptExportUrl(id: string, format: "md" | "latex" | "docx"): string {
     return `/api/manuscripts/${id}/export?format=${format}`;
+  },
+
+  listSourcesStats(): Promise<{ count: number; last_updated: string | null }> {
+    return request("/api/sources", { method: "GET" });
+  },
+
+  bibtexUrl(): string {
+    return "/api/sources/bibtex";
   }
 };
 
