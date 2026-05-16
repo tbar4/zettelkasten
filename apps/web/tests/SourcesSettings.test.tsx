@@ -20,7 +20,7 @@ vi.mock("../src/lib/api-client", () => ({
 import { api } from "../src/lib/api-client";
 import { Route } from "../src/routes/settings.sources";
 
-const Component = Route.component as React.ComponentType;
+const Component = (Route as unknown as { component: React.ComponentType }).component;
 
 function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
