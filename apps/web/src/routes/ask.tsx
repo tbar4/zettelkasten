@@ -18,14 +18,15 @@ function renderCitations(text: string): string {
 
 function CitationCard({
   note,
-  onClick
+  onClick,
+  onDismiss
 }: {
   note: AskCitationNote;
   onClick: () => void;
+  onDismiss: () => void;
 }) {
   return (
     <div
-      onClick={onClick}
       style={{
         border: "1px solid #333",
         borderRadius: 6,
@@ -34,11 +35,33 @@ function CitationCard({
         flex: "0 0 auto",
         minWidth: 180,
         maxWidth: 220,
-        background: "#1a1b26"
+        background: "#1a1b26",
+        position: "relative"
       }}
       title={`Similarity: ${(note.similarity * 100).toFixed(1)}%`}
     >
-      <div style={{ fontSize: 13, color: "#c0caf5", marginBottom: 4 }}>
+      <button
+        onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+        title="Dismiss"
+        style={{
+          position: "absolute",
+          top: 4,
+          right: 4,
+          background: "transparent",
+          border: "none",
+          color: "#555",
+          cursor: "pointer",
+          fontSize: 11,
+          padding: "0 2px",
+          lineHeight: 1
+        }}
+      >
+        ✕
+      </button>
+      <div
+        onClick={onClick}
+        style={{ fontSize: 13, color: "#c0caf5", marginBottom: 4, paddingRight: 16 }}
+      >
         {note.title}
       </div>
       <div style={{ fontSize: 11, color: "#666" }}>
@@ -57,6 +80,7 @@ function AskPage() {
   const [error, setError] = useState<string | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
   const abortRef = useRef<boolean>(false);
+  const citationsSurfacedAtRef = useRef<string>(new Date().toISOString());
 
   async function handleAsk() {
     if (!question.trim() || streaming) return;
@@ -81,6 +105,7 @@ function AskPage() {
   function handleEvent(evt: AskEvent) {
     switch (evt.type) {
       case "citations":
+        citationsSurfacedAtRef.current = new Date().toISOString();
         setCitations(evt.notes);
         break;
       case "token":
@@ -118,7 +143,21 @@ function AskPage() {
   }
 
   function handleCitationClick(note: AskCitationNote) {
+    void api.postSuggestionFeedback({
+      toNoteId: note.id,
+      action: "accepted",
+      surfacedAt: citationsSurfacedAtRef.current
+    });
     void navigate({ to: "/notes/$noteId", params: { noteId: note.id } });
+  }
+
+  function handleCitationDismiss(note: AskCitationNote) {
+    void api.postSuggestionFeedback({
+      toNoteId: note.id,
+      action: "dismissed",
+      surfacedAt: citationsSurfacedAtRef.current
+    });
+    setCitations((prev) => prev.filter((c) => c.id !== note.id));
   }
 
   const canDraft = answer.trim().length > 0 && !streaming;
@@ -207,6 +246,7 @@ function AskPage() {
                 key={note.id}
                 note={note}
                 onClick={() => handleCitationClick(note)}
+                onDismiss={() => handleCitationDismiss(note)}
               />
             ))}
           </div>

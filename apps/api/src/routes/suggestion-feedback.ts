@@ -34,9 +34,10 @@ suggestionFeedbackRoute.post(
       surfacedAt: new Date(body.surfacedAt)
     });
 
-    const [{ count }] = await db.execute<{ count: string }>(
+    const rows = await db.execute<{ count: string }>(
       sql`SELECT COUNT(*)::text AS count FROM suggestion_feedback`
     );
+    const count = rows[0]?.count ?? "0";
 
     return c.json({ count: Number(count) });
   }
@@ -49,8 +50,9 @@ suggestionFeedbackRoute.post(
  * if count < 30, the API falls back to raw embedding order (no re-ranking).
  */
 suggestionFeedbackRoute.get("/count", async (c) => {
-  const [{ count }] = await db.execute<{ count: string }>(
+  const rows = await db.execute<{ count: string }>(
     sql`SELECT COUNT(*)::text AS count FROM suggestion_feedback`
   );
+  const count = rows[0]?.count ?? "0";
   return c.json({ count: Number(count) });
 });

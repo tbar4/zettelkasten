@@ -471,6 +471,24 @@ export const api = {
   },
 
   /**
+   * POST /api/suggestion-feedback
+   *
+   * Records a user interaction with a suggested note.
+   */
+  postSuggestionFeedback(input: {
+    fromNoteId?: string;
+    toNoteId: string;
+    action: "accepted" | "rejected" | "dismissed";
+    surfacedAt: string;
+  }): Promise<{ count: number }> {
+    return request("/api/suggestion-feedback", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    });
+  },
+
+  /**
    * POST /api/ask — sends a question and consumes the SSE stream.
    * Yields typed AskEvent objects: citations → tokens → done/error.
    */
