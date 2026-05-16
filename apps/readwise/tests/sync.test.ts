@@ -95,6 +95,46 @@ describe("runSync", () => {
     expect(highlightRows).toHaveLength(2);
   });
 
+  it("updates highlight text on re-sync when the source data changed", async () => {
+    const bookV1 = {
+      ...sampleBook,
+      highlights: [
+        {
+          id: 1,
+          text: "old text",
+          note: null,
+          location: 10,
+          location_type: "order",
+          highlighted_at: "2026-05-15T10:00:00Z",
+          color: "yellow"
+        }
+      ]
+    };
+    const bookV2 = {
+      ...sampleBook,
+      highlights: [
+        {
+          id: 1,
+          text: "edited text",
+          note: "now with a note",
+          location: 10,
+          location_type: "order",
+          highlighted_at: "2026-05-15T10:00:00Z",
+          color: "blue"
+        }
+      ]
+    };
+
+    await runSync(url, makeFakeClient([{ books: [bookV1], nextPageCursor: null }]));
+    await runSync(url, makeFakeClient([{ books: [bookV2], nextPageCursor: null }]));
+
+    const rows = await db.select().from(schema.highlights);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.text).toBe("edited text");
+    expect(rows[0]!.noteText).toBe("now with a note");
+    expect(rows[0]!.color).toBe("blue");
+  });
+
   it("paginates across pages", async () => {
     const fakeClient = makeFakeClient([
       { books: [sampleBook], nextPageCursor: "next" },

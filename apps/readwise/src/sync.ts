@@ -81,9 +81,13 @@ async function insertHighlights(
   let inserted = 0;
   for (const h of book.highlights) {
     const readwiseHighlightId = String(h.id);
-    const result = await db
-      .insert(highlights)
-      .values({
+    const existing = await db
+      .select({ id: highlights.id })
+      .from(highlights)
+      .where(eq(highlights.readwiseHighlightId, readwiseHighlightId));
+
+    if (existing.length === 0) {
+      await db.insert(highlights).values({
         sourceId,
         text: h.text,
         noteText: h.note ?? null,
@@ -93,14 +97,22 @@ async function insertHighlights(
             : null,
         color: h.color ?? null,
         readwiseHighlightId
-      })
-      // Untargeted: the partial unique index on readwise_highlight_id
-      // (WHERE NOT NULL) can't be addressed via Drizzle's target shorthand
-      // in 0.36. The PK is gen_random_uuid() so the only conflict surface
-      // is that partial unique — re-syncs of the same highlight no-op.
-      .onConflictDoNothing()
-      .returning({ id: highlights.id });
-    if (result.length > 0) inserted++;
+      });
+      inserted++;
+    } else {
+      await db
+        .update(highlights)
+        .set({
+          text: h.text,
+          noteText: h.note ?? null,
+          location:
+            h.location !== undefined && h.location !== null
+              ? String(h.location)
+              : null,
+          color: h.color ?? null
+        })
+        .where(eq(highlights.readwiseHighlightId, readwiseHighlightId));
+    }
   }
   return inserted;
 }

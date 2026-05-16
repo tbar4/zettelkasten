@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@zk/db-schema": "workspace:*",
-    "@zk/shared": "workspace:*",
     "drizzle-orm": "^0.36.4",
     "postgres": "^3.4.5",
     "simple-git": "^3.27.0",
