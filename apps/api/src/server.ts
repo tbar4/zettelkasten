@@ -16,6 +16,7 @@ import { canvasesRoute } from "./routes/canvases";
 import { manuscriptsRoute } from "./routes/manuscripts";
 import { manuscriptExportsRoute } from "./routes/manuscript-exports";
 import { sourcesRoute } from "./routes/sources";
+import { mlRoute } from "./routes/ml";
 
 export const app = new Hono();
 
@@ -38,6 +39,7 @@ app.route("/api/canvases", canvasesRoute);
 app.route("/api/manuscripts", manuscriptsRoute);
 app.route("/api/manuscripts", manuscriptExportsRoute);
 app.route("/api/sources", sourcesRoute);
+app.route("/api/ml", mlRoute);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
