@@ -13,6 +13,7 @@ import { Route as ManuscriptsRouteImport } from './routes/manuscripts'
 import { Route as MRouteImport } from './routes/m'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GraphRouteImport } from './routes/graph'
+import { Route as AskRouteImport } from './routes/ask'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ManuscriptsIndexRouteImport } from './routes/manuscripts.index'
 import { Route as SettingsSourcesRouteImport } from './routes/settings.sources'
@@ -42,6 +43,11 @@ const InboxRoute = InboxRouteImport.update({
 const GraphRoute = GraphRouteImport.update({
   id: '/graph',
   path: '/graph',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AskRoute = AskRouteImport.update({
+  id: '/ask',
+  path: '/ask',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -97,6 +103,7 @@ const TopicsNoteIdCanvasRoute = TopicsNoteIdCanvasRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ask': typeof AskRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
   '/m': typeof MRouteWithChildren
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ask': typeof AskRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
   '/m': typeof MRouteWithChildren
@@ -129,6 +137,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ask': typeof AskRoute
   '/graph': typeof GraphRoute
   '/inbox': typeof InboxRoute
   '/m': typeof MRouteWithChildren
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ask'
     | '/graph'
     | '/inbox'
     | '/m'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ask'
     | '/graph'
     | '/inbox'
     | '/m'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/ask'
     | '/graph'
     | '/inbox'
     | '/m'
@@ -195,6 +207,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AskRoute: typeof AskRoute
   GraphRoute: typeof GraphRoute
   InboxRoute: typeof InboxRoute
   MRoute: typeof MRouteWithChildren
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/graph'
       fullPath: '/graph'
       preLoaderRoute: typeof GraphRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ask': {
+      id: '/ask'
+      path: '/ask'
+      fullPath: '/ask'
+      preLoaderRoute: typeof AskRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -337,6 +357,7 @@ const ManuscriptsRouteWithChildren = ManuscriptsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AskRoute: AskRoute,
   GraphRoute: GraphRoute,
   InboxRoute: InboxRoute,
   MRoute: MRouteWithChildren,
