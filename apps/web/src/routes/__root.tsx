@@ -1,9 +1,41 @@
 import { Outlet, createRootRoute, Link, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CommandPalette } from "../components/CommandPalette";
 import { useCommandPalette } from "../lib/use-command-palette";
 import { startFlushLoop } from "../lib/outbox-flush";
 import { api } from "../lib/api-client";
+
+function MlStatusBadge() {
+  const { data } = useQuery({
+    queryKey: ["ml", "embedding-status"],
+    queryFn: () => api.getEmbeddingStatus(),
+    refetchInterval: 30_000,
+    // Don't show an error state — badge is purely informational
+    retry: false
+  });
+
+  if (!data) return null;
+
+  const { total, embedded, stale } = data;
+  const allDone = stale === 0 && total > 0;
+  const color = allDone ? "#9ece6a" : stale > 0 ? "#e0af68" : "#666";
+  const tooltip = `ML embeddings: ${embedded}/${total} embedded${stale > 0 ? `, ${stale} stale` : ""}`;
+
+  return (
+    <span
+      title={tooltip}
+      style={{
+        fontSize: 11,
+        color,
+        cursor: "default",
+        userSelect: "none"
+      }}
+    >
+      ML {embedded}/{total}
+    </span>
+  );
+}
 
 function Root() {
   const { open, setOpen } = useCommandPalette();
@@ -48,6 +80,7 @@ function Root() {
         <span style={{ marginLeft: "auto", fontSize: 12, color: "#666" }}>
           ⌘K to search
         </span>
+        <MlStatusBadge />
       </header>
       <Outlet />
       <CommandPalette open={open} onClose={() => setOpen(false)} />
