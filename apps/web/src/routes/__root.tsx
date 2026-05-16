@@ -1,9 +1,24 @@
-import { Outlet, createRootRoute, Link } from "@tanstack/react-router";
+import { Outlet, createRootRoute, Link, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { CommandPalette } from "../components/CommandPalette";
 import { useCommandPalette } from "../lib/use-command-palette";
+import { startFlushLoop } from "../lib/outbox-flush";
+import { api } from "../lib/api-client";
 
 function Root() {
   const { open, setOpen } = useCommandPalette();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isMobile = pathname.startsWith("/m/") || pathname === "/m";
+
+  useEffect(() => {
+    const cleanup = startFlushLoop(api);
+    return cleanup;
+  }, []);
+
+  if (isMobile) {
+    return <Outlet />;
+  }
+
   return (
     <>
       <header style={{ marginBottom: 24, display: "flex", alignItems: "baseline", gap: 16 }}>
