@@ -53,6 +53,12 @@ function mockMlClient(returnVec: number[]): MLClient {
     },
     async trainReranker(_features, _labels) {
       return { trained: 0, loss: 0 };
+    },
+    async scoreHighlights(features) {
+      return { scores: features.map(() => 0.5) };
+    },
+    async trainClassifier(_features, _labels) {
+      return { trained: 0, noop: true };
     }
   };
 }
@@ -67,6 +73,12 @@ function failingMlClient(): MLClient {
       throw new Error("ML service unavailable");
     },
     async trainReranker(_features, _labels) {
+      throw new Error("ML service unavailable");
+    },
+    async scoreHighlights(_features) {
+      throw new Error("ML service unavailable");
+    },
+    async trainClassifier(_features, _labels) {
       throw new Error("ML service unavailable");
     }
   };
