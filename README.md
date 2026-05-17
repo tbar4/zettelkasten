@@ -25,7 +25,7 @@ Prerequisites: Node 22, pnpm 9+, Docker Desktop. **Optional:** [Pandoc](https://
 pnpm install
 pnpm db:up                              # postgres + redis
 pnpm --filter @zk/api db:migrate
-NODE_ENV=test pnpm --filter @zk/api db:migrate      # also migrate test DB
+pnpm db:migrate:test                                # creates + migrates per-package test DBs
 pnpm dev:api                            # http://localhost:3001
 pnpm dev:web                            # http://localhost:5173
 pnpm dev:mirror                         # writes notes to ~/Notes/zettel and auto-commits
