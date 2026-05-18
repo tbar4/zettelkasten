@@ -8,7 +8,7 @@ import type { MLClient } from "../src/ml-client.js";
 
 const url =
   process.env.DATABASE_URL_TEST ??
-  "postgres://zk:zk@localhost:5433/zettel_test";
+  "postgres://zk:zk@localhost:5433/zettel_test_embedding";
 
 const pgClient = postgres(url, { max: 1 });
 const db = drizzle(pgClient, { schema });

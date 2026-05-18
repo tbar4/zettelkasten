@@ -10,7 +10,7 @@ import { runSweep } from "../src/sweep";
 
 const url =
   process.env.DATABASE_URL_TEST ??
-  "postgres://zk:zk@localhost:5433/zettel_test";
+  "postgres://zk:zk@localhost:5433/zettel_test_mirror";
 
 const client = postgres(url, { max: 1 });
 const db = drizzle(client, { schema });

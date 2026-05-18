@@ -1,0 +1,32 @@
+# Shared dev image for every Node service in the zettelkasten workspace.
+# Each compose service overrides `command:` to launch its own dev entrypoint.
+FROM node:22-alpine
+
+# git: simple-git in mirror, drizzle-kit, generally useful in dev.
+# python3/make/g++: native-module builds (better-sqlite3, etc) if pnpm needs them.
+RUN apk add --no-cache git python3 make g++
+
+# pnpm via corepack pinned to the workspace's version.
+RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
+
+WORKDIR /app
+
+# Copy lockfile + manifests first so `pnpm install` can cache.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY apps/mirror/package.json ./apps/mirror/
+COPY apps/readwise/package.json ./apps/readwise/
+COPY apps/embedding-worker/package.json ./apps/embedding-worker/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/db-schema/package.json ./packages/db-schema/
+
+RUN pnpm install --frozen-lockfile
+
+# Then copy the rest of the source. Bind mounts in compose will overlay this
+# for live editing; the in-image copy makes one-off `docker run` work too.
+COPY . .
+
+# Default command — overridden per service. `sh` lets the container start
+# even with no command, useful for `docker compose run <svc> sh`.
+CMD ["sh"]

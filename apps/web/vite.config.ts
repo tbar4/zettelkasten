@@ -23,9 +23,19 @@ export default defineConfig({
     })
   ],
   server: {
+    // In Docker, Vite must bind 0.0.0.0 to be reachable through the published port.
+    // Outside Docker this is harmless; both `localhost:5173` and the LAN IP work.
+    host: true,
     port: 5173,
+    // HMR needs polling when the source is on a bind-mounted host volume
+    // (filesystem events don't propagate reliably through the Docker VM).
+    watch: process.env.CHOKIDAR_USEPOLLING
+      ? { usePolling: true, interval: 300 }
+      : undefined,
     proxy: {
-      "/api": "http://localhost:3001"
+      // Inside the api compose service this resolves to the api container.
+      // Outside Docker, default to localhost. Override with API_PROXY_TARGET.
+      "/api": process.env.API_PROXY_TARGET ?? "http://localhost:3001"
     }
   },
   test: {

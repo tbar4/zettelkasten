@@ -31,18 +31,31 @@ The mobile shell (`/m/`) renders a bottom tab bar (Capture / Inbox) and suppress
 
 ## Setup
 
-Prerequisites: Node 22, pnpm 9+, Docker Desktop. **Optional:** [Pandoc](https://pandoc.org/installing.html) for LaTeX and DOCX manuscript export.
+Prerequisites: Docker Desktop. (Node 22 + pnpm only needed for running tests on the host — `pnpm -r test`.) **Optional:** [Pandoc](https://pandoc.org/installing.html) for LaTeX/DOCX manuscript export, native Python ML service for embeddings.
+
+```bash
+cp .env.example .env                    # edit to add READWISE_TOKEN etc. (all values optional)
+docker compose up                       # brings up postgres, redis, db migrations, api, web, mirror, readwise, embedding-worker
+```
+
+Then open <http://localhost:5173>. The api is on `:3001`, postgres on `:5433`, redis on `:6379`.
+
+What you get:
+- `postgres` + `redis` — datastores
+- `db-init` — one-shot, runs migrations and exits
+- `api`, `web`, `mirror`, `readwise`, `embedding-worker` — all hot-reload on file changes (sources are bind-mounted)
+- Workers that need optional config (Readwise token, ML service) log "idling" and stay up — no crash loops
+
+To enable a worker after first boot: add the token to `.env` and `docker compose restart <service>`.
+
+### Running tests
+
+Tests run on the host (not in containers). One-time setup:
 
 ```bash
 pnpm install
-pnpm db:up                              # postgres + redis
-pnpm --filter @zk/api db:migrate
-NODE_ENV=test pnpm --filter @zk/api db:migrate      # also migrate test DB
-pnpm dev:api                            # http://localhost:3001
-pnpm dev:web                            # http://localhost:5173
-pnpm dev:mirror                         # writes notes to ~/Notes/zettel and auto-commits
-pnpm dev:readwise                       # readwise sync (requires READWISE_TOKEN env var)
-pnpm dev:embedding-worker               # embedding worker (optional — requires ML service running)
+pnpm db:migrate:test                    # creates + migrates per-package test DBs
+pnpm -r test                            # runs every package's tests in parallel
 ```
 
 **Note on Postgres port:** the container exposes `localhost:5433` (not `5432`) to avoid conflicts with `Postgres.app` on macOS.
