@@ -1,3 +1,41 @@
+# `docker compose up` brings up the full dev stack. The ML service (apps/ml)
+# is intentionally not here — it needs Metal/GPU access and must run natively.
+# See README "ML service" section.
+
+# Pinned project name so worktrees share volumes + container names with the
+# main checkout (instead of each cwd getting its own isolated stack and
+# clobbering the postgres data we already migrated).
+name: zettelkasten
+
+# Shared bits factored as YAML anchors. Every node service uses the same image
+# and the same anonymous-volume layout for `node_modules`. Bind-mounting the
+# source over /app would otherwise wipe out the container's pnpm install.
+x-node-app: &node-app
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  image: zk-node-dev
+  init: true
+  restart: unless-stopped
+
+x-node-volumes: &node-volumes
+  - .:/app
+  - /app/node_modules
+  - /app/apps/api/node_modules
+  - /app/apps/web/node_modules
+  - /app/apps/mirror/node_modules
+  - /app/apps/readwise/node_modules
+  - /app/apps/embedding-worker/node_modules
+  - /app/packages/shared/node_modules
+  - /app/packages/db-schema/node_modules
+
+x-app-env: &app-env
+  NODE_ENV: development
+  # In-container DB URL uses the compose service name (postgres) and the
+  # container-internal port (5432). The host still gets 5433 mapped below.
+  DATABASE_URL: postgres://zk:zk@postgres:5432/zettel
+  DATABASE_URL_TEST: postgres://zk:zk@postgres:5432/zettel_test
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -31,6 +69,121 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # One-shot service: runs Drizzle migrations against the main DB, then exits.
+  # Other services wait for it via `service_completed_successfully`.
+  db-init:
+    <<: *node-app
+    restart: "no"
+    container_name: zk-db-init
+    command: pnpm --filter @zk/api db:migrate
+    environment:
+      <<: *app-env
+    volumes: *node-volumes
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *node-app
+    container_name: zk-api
+    command: pnpm --filter @zk/api dev
+    environment:
+      <<: *app-env
+      PORT: "3001"
+    ports:
+      - "3001:3001"
+    volumes: *node-volumes
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+
+  web:
+    <<: *node-app
+    container_name: zk-web
+    command: pnpm --filter @zk/web dev
+    environment:
+      <<: *app-env
+      # Inside the container Vite proxies /api to the api compose service.
+      API_PROXY_TARGET: http://api:3001
+      # Filesystem-event-based watching doesn't work reliably across the
+      # Docker Desktop VirtIOFS layer; polling does.
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes: *node-volumes
+    depends_on:
+      - api
+
+  mirror:
+    <<: *node-app
+    container_name: zk-mirror
+    command: pnpm --filter @zk/mirror dev
+    environment:
+      <<: *app-env
+      ZK_MIRROR_DIR: /mirror
+      # Optional — falls through to the mirror's built-in "zk mirror" identity
+      # if blank. Only used on first commit in a freshly-initialised repo.
+      GIT_AUTHOR_NAME: ${MIRROR_GIT_USER_NAME:-}
+      GIT_AUTHOR_EMAIL: ${MIRROR_GIT_USER_EMAIL:-}
+      GIT_COMMITTER_NAME: ${MIRROR_GIT_USER_NAME:-}
+      GIT_COMMITTER_EMAIL: ${MIRROR_GIT_USER_EMAIL:-}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/api/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/mirror/node_modules
+      - /app/apps/readwise/node_modules
+      - /app/apps/embedding-worker/node_modules
+      - /app/packages/shared/node_modules
+      - /app/packages/db-schema/node_modules
+      # Host notes dir. Bind-mounted; Docker Desktop on Mac handles UID
+      # translation so files appear owned by the host user.
+      - ${ZK_MIRROR_HOST_DIR:-${HOME}/Notes/zettel}:/mirror
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+
+  readwise:
+    <<: *node-app
+    container_name: zk-readwise
+    command: pnpm --filter @zk/readwise dev
+    environment:
+      <<: *app-env
+      # Blank token → service logs "idling" and stays up. Drop a token into
+      # .env and `docker compose restart readwise` to enable sync.
+      READWISE_TOKEN: ${READWISE_TOKEN:-}
+    volumes: *node-volumes
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+
+  embedding-worker:
+    <<: *node-app
+    container_name: zk-embedding-worker
+    command: pnpm --filter @zk/embedding-worker dev
+    environment:
+      <<: *app-env
+      # Default points at the host (where ML must run — Metal). The worker
+      # already idles + retries when the ML service is unreachable.
+      ML_BASE_URL: ${ML_BASE_URL:-http://host.docker.internal:8000}
+    # host.docker.internal works automatically on Docker Desktop (Mac/Win).
+    # The explicit mapping makes Linux work too if anyone runs this there.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes: *node-volumes
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
 
 volumes:
   zk-postgres-data:
